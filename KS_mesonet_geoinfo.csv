@@ -1,0 +1,57 @@
+station_name,stid,lat,lon,elev,county,city
+Ashland Bottoms,ASHL,39.1258,-96.6365,325,Riley,Manhattan
+Butler,BUTL,37.8043,-96.8831,401,Butler,El Dorado
+Cherokee,CHER,37.199,-94.9809,265,Cherokee,Columbus
+Cheyenne,CHEY,39.6333,-101.8153,1116,Cheyenne,St. Francis
+Clay,CLAY,39.418,-97.1398,388,Clay,Clay Center
+Colby,COLB,39.3925,-101.0686,972,Thomas,Colby
+Garden City,GARD,37.9929,-100.8122,882,Finney,Garden City
+Grant,GRNT,37.6496,-101.3664,934,Grant,Ulysses
+Gray,GRAY,37.7916,-100.2973,794,Gray,Cimmaron
+Gypsum,GYPS,38.7252,-97.4442,373,Saline,Gypsum
+Hamilton,HMLT,37.9764,-101.769,988,Hamilton,Syracuse
+Harper,HARP,37.0648,-98.0847,428,Harper,Anthony
+Haskell,HASK,37.6592,-101.0267,935,Haskell,Sublette
+Hays,HAYS,38.8495,-99.3446,619,Ellis,Hays
+Haysville,HYSV,37.5198,-97.3121,378,Sedgwick,Haysville
+Hiawatha,HIAW,39.8424,-95.4819,308,Brown,Hiawatha
+Hill City,HILL,39.372,-99.8305,665,Graham,Hill City
+Hodgeman,HODG,38.1007,-99.9016,716,Hodgeman,Jetmore
+Hutchinson 10SW,HCSW,37.931,-98.0272,465,Reno,Hutchinson
+Jewell,JEWL,39.6834,-98.2131,540,Jewell,Jewell
+La Crosse,CROSS,38.541,-99.2805,627,Rush,La Crosse
+Lake City,LKCT,37.31,-98.79,509.3,Barber,Lake City
+Lakin,LKIN,37.8937,-101.2326,912,Kearny,Lakin
+Lane,LANE,38.5088,-100.6147,872,Lane,Dighton
+Leoti,LEOT,38.4834,-101.3277,1002,Wichita,Leoti
+Lorraine,LORR,38.558,-98.352,542,Ellsworth,Lorraine
+Manhattan,MANH,39.2086,-96.5917,332,Riley,Manhattan
+Meade,MEAD,37.1348,-100.3957,718,Meade,Meade
+Miami,MIAM,38.5923,-94.8479,291,Miami,Paola
+Mitchell,MTCH,39.4373,-98.2101,453,Mitchell,Beloit
+Ness City,NESS,38.3861,-99.8555,678,Ness,Ness City
+Olathe,OLAT,38.883,-94.9911,285,Johnson,Olate
+Osage,OSAG,38.697,-95.6086,302,Osage,Lyndon
+Osborne,OSBN,39.4544,-98.7035,490,Osborne,Osborne
+Ottawa,OTTW,38.5391,-95.2481,299,Franklin,Ottawa
+Parsons,PARS,37.3688,-95.2877,288,Labette,Parsons
+Richfield,RICH,37.2587,-101.792,1045,Morton,Richfield
+Rock Springs,ROCK,38.867,-96.9029,374,Dickinson,Rock Springs
+Rocky Ford,FORD,39.2316,-96.5805,320,Riley,Manhattan
+Rossville,ROSS,39.1164,-95.926,276,Shawnee,Rossville
+Satanta,SATA,37.3054,-100.8872,879,Seward,Kismet
+Scandia,SCND,39.8286,-97.8389,457,Republic,Scandia
+Sedan,SDAN,37.165,-96.2289,303,Chautauqua,Sedan
+Sheridan,SHRD,39.3575,-100.6082,883,Sheridan,Hoxie
+Sherman,SHMN,39.2813,-101.8194,1156,Sherman,Goodland
+Silver Lake,SILV,39.0779,-95.7708,271,Shawnee,Silver Lake
+Spearville,SPRV,37.9025,-99.8695,707,Ford,Spearville
+St John,JOHN,37.9571,-98.7481,587,Stafford,St. John
+Stanton,STAN,37.6141,-101.728,1000,Stanton,Johnson City
+Stevens,STEV,37.3519,-101.3555,947,Stevens,Hugoton
+Tribune,TRIB,38.5304,-101.6643,1098,Greeley,Tribune
+Tribune 6NE,TBNE,38.4662,-101.7752,1108,Greeley,Tribune
+Viola,VIOL,37.4597,-97.6247,413,Sumner,Viola
+Wallace,WALL,38.8198,-101.853,1130,Wallace,Sharon Springs
+Washington,WASH,39.7812,-97.0598,417,Washington,Washington
+Woodson,WOOD,37.8612,-95.7836,338,Woodson,Yates Center

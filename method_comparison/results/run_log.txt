@@ -1,0 +1,126 @@
+Kansas: area 217,425 km2, 8 stations, grid 54357 cells
+  Largest Empty Area       placed 10  (0.6s)
+  Buffer r=25 km           placed 10  (0.7s)
+  Buffer r=50 km           placed 10  (0.7s)
+  trial 0/300  Kansas-like  area   109478 n0=23  (0s)
+  trial 20/300  Scandinavia  area   101393 n0=25  (5s)
+  trial 40/300  SE Asia      area   183661 n0=28  (10s)
+  trial 60/300  Kansas-like  area    39009 n0=33  (14s)
+  trial 80/300  Scandinavia  area    38650 n0=30  (19s)
+  trial 100/300  SE Asia      area   129454 n0=20  (24s)
+  trial 120/300  Kansas-like  area    44121 n0=30  (29s)
+  trial 140/300  Scandinavia  area    45482 n0=16  (33s)
+  trial 160/300  SE Asia      area   140261 n0=36  (37s)
+  trial 180/300  Kansas-like  area    85526 n0=13  (42s)
+  trial 200/300  Scandinavia  area    54047 n0= 7  (47s)
+  trial 220/300  SE Asia      area   102745 n0= 4  (51s)
+  trial 240/300  Kansas-like  area    94341 n0=19  (56s)
+  trial 260/300  Scandinavia  area    73809 n0=34  (61s)
+  trial 280/300  SE Asia      area   140423 n0=20  (66s)
+{
+ "n_trials": 300,
+ "BUF25": {
+  "stopped_early_%": 0.3,
+  "n_compared": 299,
+  "max_d": {
+   "LEA_mean": 76.514,
+   "BUF_mean": 115.15,
+   "LEA_better_%": 88.3,
+   "tie_%": 3.0,
+   "BUF_better_%": 8.7,
+   "median_%_BUF_vs_LEA": 51.1
+  },
+  "mean_d": {
+   "LEA_mean": 27.081,
+   "BUF_mean": 37.871,
+   "LEA_better_%": 93.3,
+   "tie_%": 2.0,
+   "BUF_better_%": 4.7,
+   "median_%_BUF_vs_LEA": 31.9
+  },
+  "p95_d": {
+   "LEA_mean": 50.363,
+   "BUF_mean": 81.05,
+   "LEA_better_%": 91.6,
+   "tie_%": 0.7,
+   "BUF_better_%": 7.7,
+   "median_%_BUF_vs_LEA": 56.5
+  },
+  "cov50": {
+   "LEA_mean": 91.321,
+   "BUF_mean": 74.373,
+   "LEA_better_%": 84.9,
+   "tie_%": 15.1,
+   "BUF_better_%": 0.0,
+   "median_%_BUF_vs_LEA": -18.7
+  },
+  "ksd25": {
+   "LEA_mean": 0.873,
+   "BUF_mean": 0.887,
+   "LEA_better_%": 90.3,
+   "tie_%": 9.7,
+   "BUF_better_%": 0.0,
+   "median_%_BUF_vs_LEA": 1.6
+  },
+  "ksd100": {
+   "LEA_mean": 0.56,
+   "BUF_mean": 0.613,
+   "LEA_better_%": 91.3,
+   "tie_%": 2.3,
+   "BUF_better_%": 6.4,
+   "median_%_BUF_vs_LEA": 9.1
+  }
+ },
+ "BUF50": {
+  "stopped_early_%": 28.3,
+  "n_compared": 215,
+  "max_d": {
+   "LEA_mean": 86.922,
+   "BUF_mean": 92.964,
+   "LEA_better_%": 36.7,
+   "tie_%": 4.2,
+   "BUF_better_%": 59.1,
+   "median_%_BUF_vs_LEA": -6.1
+  },
+  "mean_d": {
+   "LEA_mean": 30.783,
+   "BUF_mean": 34.308,
+   "LEA_better_%": 53.5,
+   "tie_%": 15.8,
+   "BUF_better_%": 30.7,
+   "median_%_BUF_vs_LEA": 1.2
+  },
+  "p95_d": {
+   "LEA_mean": 57.387,
+   "BUF_mean": 65.857,
+   "LEA_better_%": 44.2,
+   "tie_%": 2.8,
+   "BUF_better_%": 53.0,
+   "median_%_BUF_vs_LEA": -1.7
+  },
+  "cov50": {
+   "LEA_mean": 88.008,
+   "BUF_mean": 83.583,
+   "LEA_better_%": 47.0,
+   "tie_%": 6.5,
+   "BUF_better_%": 46.5,
+   "median_%_BUF_vs_LEA": 0.3
+  },
+  "ksd25": {
+   "LEA_mean": 0.902,
+   "BUF_mean": 0.905,
+   "LEA_better_%": 10.7,
+   "tie_%": 89.3,
+   "BUF_better_%": 0.0,
+   "median_%_BUF_vs_LEA": 0.2
+  },
+  "ksd100": {
+   "LEA_mean": 0.594,
+   "BUF_mean": 0.605,
+   "LEA_better_%": 42.8,
+   "tie_%": 20.9,
+   "BUF_better_%": 36.3,
+   "median_%_BUF_vs_LEA": -0.1
+  }
+ }
+}

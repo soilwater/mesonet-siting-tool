@@ -1,0 +1,288 @@
+{
+ "kansas": {
+  "Largest Empty Area": {
+   "5": {
+    "max_d": 280.427,
+    "mean_d": 108.979,
+    "p95_d": 221.972,
+    "cov50": 18.06,
+    "ksd25": 0.988,
+    "ksd50": 0.956,
+    "ksd100": 0.875
+   },
+   "10": {
+    "max_d": 190.938,
+    "mean_d": 65.079,
+    "p95_d": 134.836,
+    "cov50": 36.095,
+    "ksd25": 0.977,
+    "ksd50": 0.916,
+    "ksd100": 0.786
+   },
+   "20": {
+    "max_d": 118.761,
+    "mean_d": 44.543,
+    "p95_d": 83.179,
+    "cov50": 64.073,
+    "ksd25": 0.954,
+    "ksd50": 0.855,
+    "ksd100": 0.697
+   },
+   "40": {
+    "max_d": 108.036,
+    "mean_d": 30.699,
+    "p95_d": 57.586,
+    "cov50": 91.201,
+    "ksd25": 0.914,
+    "ksd50": 0.772,
+    "ksd100": 0.6
+   }
+  },
+  "Buffer r=25 km": {
+   "5": {
+    "max_d": 347.177,
+    "mean_d": 172.289,
+    "p95_d": 300.433,
+    "cov50": 7.373,
+    "ksd25": 0.992,
+    "ksd50": 0.978,
+    "ksd100": 0.941
+   },
+   "10": {
+    "max_d": 334.861,
+    "mean_d": 161.364,
+    "p95_d": 292.985,
+    "cov50": 10.194,
+    "ksd25": 0.986,
+    "ksd50": 0.967,
+    "ksd100": 0.923
+   },
+   "20": {
+    "max_d": 315.328,
+    "mean_d": 142.517,
+    "p95_d": 272.029,
+    "cov50": 15.166,
+    "ksd25": 0.975,
+    "ksd50": 0.947,
+    "ksd100": 0.892
+   },
+   "40": {
+    "max_d": 287.089,
+    "mean_d": 117.952,
+    "p95_d": 244.524,
+    "cov50": 23.938,
+    "ksd25": 0.952,
+    "ksd50": 0.91,
+    "ksd100": 0.839
+   }
+  },
+  "Buffer r=50 km": {
+   "5": {
+    "max_d": 335.172,
+    "mean_d": 152.627,
+    "p95_d": 279.428,
+    "cov50": 11.826,
+    "ksd25": 0.989,
+    "ksd50": 0.968,
+    "ksd100": 0.918
+   },
+   "10": {
+    "max_d": 308.649,
+    "mean_d": 133.195,
+    "p95_d": 263.697,
+    "cov50": 18.918,
+    "ksd25": 0.979,
+    "ksd50": 0.945,
+    "ksd100": 0.88
+   },
+   "20": {
+    "max_d": 270.17,
+    "mean_d": 99.862,
+    "p95_d": 219.127,
+    "cov50": 32.577,
+    "ksd25": 0.96,
+    "ksd50": 0.902,
+    "ksd100": 0.813
+   },
+   "40": {
+    "max_d": 146.123,
+    "mean_d": 44.703,
+    "p95_d": 110.018,
+    "cov50": 65.107,
+    "ksd25": 0.92,
+    "ksd50": 0.808,
+    "ksd100": 0.662
+   }
+  },
+  "All-at-once (CVT)": {
+   "5": {
+    "max_d": 181.527,
+    "mean_d": 83.048,
+    "p95_d": 140.718,
+    "cov50": 18.073,
+    "ksd25": 0.988,
+    "ksd50": 0.955,
+    "ksd100": 0.859
+   },
+   "10": {
+    "max_d": 106.327,
+    "mean_d": 57.132,
+    "p95_d": 90.292,
+    "cov50": 36.106,
+    "ksd25": 0.977,
+    "ksd50": 0.915,
+    "ksd100": 0.774
+   },
+   "20": {
+    "max_d": 77.369,
+    "mean_d": 40.044,
+    "p95_d": 62.072,
+    "cov50": 70.988,
+    "ksd25": 0.954,
+    "ksd50": 0.85,
+    "ksd100": 0.679
+   },
+   "40": {
+    "max_d": 56.564,
+    "mean_d": 28.201,
+    "p95_d": 43.321,
+    "cov50": 99.527,
+    "ksd25": 0.913,
+    "ksd50": 0.764,
+    "ksd100": 0.585
+   }
+  },
+  "stopped_at": {
+   "Largest Empty Area": 40,
+   "Buffer r=25 km": 40,
+   "Buffer r=50 km": 40
+  }
+ },
+ "monte_carlo": {
+  "n_trials": 150,
+  "N=5": {
+   "LEA": {
+    "no_answer_%": 0.0,
+    "max_d_median_%_above_CVT": 45.0,
+    "mean_d_median_%_above_CVT": 17.6,
+    "ksd25_median_%_above_CVT": 0.0,
+    "ksd100_median_%_above_CVT": 2.5
+   },
+   "BUF25": {
+    "no_answer_%": 0.0,
+    "max_d_median_%_above_CVT": 74.2,
+    "mean_d_median_%_above_CVT": 83.7,
+    "ksd25_median_%_above_CVT": 0.7,
+    "ksd100_median_%_above_CVT": 13.7,
+    "max_d_LEA_better_%": 99.3,
+    "max_d_BUF_better_%": 0.7,
+    "mean_d_LEA_better_%": 100.0,
+    "mean_d_BUF_better_%": 0.0
+   },
+   "BUF50": {
+    "no_answer_%": 0.0,
+    "max_d_median_%_above_CVT": 58.1,
+    "mean_d_median_%_above_CVT": 51.9,
+    "ksd25_median_%_above_CVT": 0.2,
+    "ksd100_median_%_above_CVT": 8.0,
+    "max_d_LEA_better_%": 78.7,
+    "max_d_BUF_better_%": 18.0,
+    "mean_d_LEA_better_%": 95.3,
+    "mean_d_BUF_better_%": 4.7
+   }
+  },
+  "N=10": {
+   "LEA": {
+    "no_answer_%": 0.0,
+    "max_d_median_%_above_CVT": 48.5,
+    "mean_d_median_%_above_CVT": 13.2,
+    "ksd25_median_%_above_CVT": 0.0,
+    "ksd100_median_%_above_CVT": 2.9
+   },
+   "BUF25": {
+    "no_answer_%": 0.0,
+    "max_d_median_%_above_CVT": 132.4,
+    "mean_d_median_%_above_CVT": 129.7,
+    "ksd25_median_%_above_CVT": 1.7,
+    "ksd100_median_%_above_CVT": 23.9,
+    "max_d_LEA_better_%": 100.0,
+    "max_d_BUF_better_%": 0.0,
+    "mean_d_LEA_better_%": 100.0,
+    "mean_d_BUF_better_%": 0.0
+   },
+   "BUF50": {
+    "no_answer_%": 0.7,
+    "max_d_median_%_above_CVT": 100.5,
+    "mean_d_median_%_above_CVT": 68.4,
+    "ksd25_median_%_above_CVT": 0.4,
+    "ksd100_median_%_above_CVT": 13.3,
+    "max_d_LEA_better_%": 92.6,
+    "max_d_BUF_better_%": 7.4,
+    "mean_d_LEA_better_%": 93.3,
+    "mean_d_BUF_better_%": 5.4
+   }
+  },
+  "N=20": {
+   "LEA": {
+    "no_answer_%": 0.0,
+    "max_d_median_%_above_CVT": 46.7,
+    "mean_d_median_%_above_CVT": 12.1,
+    "ksd25_median_%_above_CVT": 0.1,
+    "ksd100_median_%_above_CVT": 3.8
+   },
+   "BUF25": {
+    "no_answer_%": 0.0,
+    "max_d_median_%_above_CVT": 204.2,
+    "mean_d_median_%_above_CVT": 169.7,
+    "ksd25_median_%_above_CVT": 3.6,
+    "ksd100_median_%_above_CVT": 32.8,
+    "max_d_LEA_better_%": 100.0,
+    "max_d_BUF_better_%": 0.0,
+    "mean_d_LEA_better_%": 100.0,
+    "mean_d_BUF_better_%": 0.0
+   },
+   "BUF50": {
+    "no_answer_%": 12.7,
+    "max_d_median_%_above_CVT": 129.4,
+    "mean_d_median_%_above_CVT": 60.4,
+    "ksd25_median_%_above_CVT": 0.6,
+    "ksd100_median_%_above_CVT": 14.3,
+    "max_d_LEA_better_%": 80.2,
+    "max_d_BUF_better_%": 19.8,
+    "mean_d_LEA_better_%": 79.4,
+    "mean_d_BUF_better_%": 19.1
+   }
+  },
+  "N=30": {
+   "LEA": {
+    "no_answer_%": 0.0,
+    "max_d_median_%_above_CVT": 48.5,
+    "mean_d_median_%_above_CVT": 6.6,
+    "ksd25_median_%_above_CVT": 0.2,
+    "ksd100_median_%_above_CVT": 2.5
+   },
+   "BUF25": {
+    "no_answer_%": 0.0,
+    "max_d_median_%_above_CVT": 246.1,
+    "mean_d_median_%_above_CVT": 175.9,
+    "ksd25_median_%_above_CVT": 5.0,
+    "ksd100_median_%_above_CVT": 37.7,
+    "max_d_LEA_better_%": 99.3,
+    "max_d_BUF_better_%": 0.7,
+    "mean_d_LEA_better_%": 100.0,
+    "mean_d_BUF_better_%": 0.0
+   },
+   "BUF50": {
+    "no_answer_%": 32.7,
+    "max_d_median_%_above_CVT": 136.8,
+    "mean_d_median_%_above_CVT": 49.6,
+    "ksd25_median_%_above_CVT": 0.7,
+    "ksd100_median_%_above_CVT": 12.6,
+    "max_d_LEA_better_%": 84.2,
+    "max_d_BUF_better_%": 15.8,
+    "mean_d_LEA_better_%": 96.0,
+    "mean_d_BUF_better_%": 1.0
+   }
+  }
+ }
+}

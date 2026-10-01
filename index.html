@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mesonet Siting Tool</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.17.0/dist/leaflet-geoman.css" />
+  <style>
+    :root {
+      --bg: #070a10;
+      --panel: #0f141d;
+      --panel-2: #151c28;
+      --border: #232d3d;
+      --text: #ffffff;
+      --muted: #8b97a8;
+      --cyan: #22e4ff;      /* new stations, primary actions */
+      --pink: #ff4fd8;      /* largest remaining empty area */
+      --lime: #b6ff3b;      /* boundary */
+      --violet: #a78bfa;    /* Voronoi */
+      --amber: #ffd23f;     /* grid cells with 2+ stations */
+      --existing: #ffffff;  /* existing stations */
+    }
+
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+
+    body {
+      margin: 0;
+      font-family: "Inter", "Segoe UI", Arial, Helvetica, sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    .app { max-width: 1440px; margin: 0 auto; padding: 16px; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 68px 330px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+    .layout.collapsed { grid-template-columns: 68px minmax(0, 1fr); }
+    .layout.collapsed > .panel { display: none; }
+    .panel { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; }
+    .panel .tab[hidden] { display: none; }
+
+    /* ---- activity bar (one sidebar panel at a time) ---- */
+    .activity {
+      position: sticky; top: 16px; z-index: 1100;
+      display: flex; flex-direction: column; gap: 4px;
+      padding: 6px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    }
+    .activity .sep { height: 1px; background: var(--border); margin: 4px 2px; }
+    .activity button {
+      position: relative; width: 54px; padding: 7px 0 6px;
+      display: grid; justify-items: center; gap: 4px;
+      background: transparent; border: 1px solid transparent; border-radius: 8px; color: var(--text);
+      font-size: 11px; font-weight: 600; line-height: 1;
+    }
+    .activity button:hover { background: var(--panel-2); border-color: var(--border); }
+    .activity button.active { color: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 10px rgba(34, 228, 255, .45); }
+    .activity svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .activity button.done::before {
+      content: ""; position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--cyan); box-shadow: 0 0 6px var(--cyan);
+    }
+
+
+    .panel, .card, .map-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .panel, .card { padding: 16px; }
+    .map-panel { padding: 8px; }
+
+    h1 { font-size: 20px; margin: 0 0 6px 0; letter-spacing: 0.2px; }
+    h2 { font-size: 13px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px; color: var(--cyan); }
+    h3 { font-size: 14px; margin: 16px 0 6px 0; }
+    p { margin: 0 0 8px 0; line-height: 1.5; }
+
+    .muted { color: var(--muted); }
+
+    .section {
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+    .row { display: grid; gap: 6px; margin-bottom: 10px; }
+    .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+
+    input[type="number"], button, select {
+      width: 100%;
+      padding: 8px 10px;
+      font: inherit;
+      color: var(--text);
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    input[type="number"]:focus, select:focus { outline: 1px solid var(--cyan); }
+    select { cursor: pointer; }
+
+    button { cursor: pointer; font-weight: 600; }
+    button:hover:not(:disabled) { border-color: var(--cyan); }
+    button.primary { background: var(--cyan); border-color: var(--cyan); color: #04151a; }
+    button.primary:hover:not(:disabled) { box-shadow: 0 0 12px rgba(34, 228, 255, .55); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    button.link { width: auto; padding: 0; border: none; background: none; color: var(--cyan); font-weight: 600; }
+    button.link:hover { text-decoration: underline; }
+
+    input[type="checkbox"], input[type="range"] { accent-color: var(--cyan); }
+    .check { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+    .check input { margin: 0; }
+
+    .slider-head { display: flex; justify-content: space-between; align-items: baseline; }
+    .slider-head .val { font-weight: 700; color: var(--cyan); }
+    input[type="range"] { width: 100%; margin: 6px 0 2px; }
+
+    .note a { color: var(--cyan); }
+    .note {
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--muted);
+      border-left: 2px solid var(--border);
+      padding-left: 8px;
+      margin-top: 6px;
+    }
+
+    .count { font-weight: 700; }
+    .step {
+      display: inline-grid; place-items: center;
+      width: 20px; height: 20px; margin-right: 8px;
+      border: 1px solid var(--cyan); border-radius: 50%;
+      font-size: 11px; letter-spacing: 0;
+    }
+    .opt { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: 6px; }
+    button.active { color: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 10px rgba(34, 228, 255, .35); }
+    .info { line-height: 1.6; }
+    .info b { color: var(--cyan); font-weight: 700; }
+
+    .progress { height: 6px; background: var(--panel-2); border-radius: 3px; overflow: hidden; margin: 10px 0 6px; }
+    .progress > div { height: 100%; width: 0; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); transition: width 0.1s; }
+    .status:empty { display: none; }
+
+    .stats { display: grid; gap: 6px; margin: 12px 0; }
+    .stat-head, .stat {
+      display: grid;
+      grid-template-columns: 1fr 76px 76px;
+      gap: 8px;
+      align-items: baseline;
+    }
+    .stat-head { font-size: 12px; color: var(--muted); padding: 0 10px; }
+    .stat-head span, .stat .v { text-align: right; }
+    .stat {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .stat .v { font-weight: 700; white-space: nowrap; }
+    .stat .v.new { color: var(--cyan); }
+    #zoneCard .stat-head, #zoneCard .stat { grid-template-columns: 1fr 104px 104px; }
+
+    .table-wrap { max-height: 260px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 6px 8px; text-align: right; font-size: 13px; border-bottom: 1px solid var(--border); }
+    th { position: sticky; top: 0; background: var(--panel-2); font-weight: 600; }
+    td:first-child, th:first-child { text-align: left; }
+    td:first-child { color: var(--cyan); font-weight: 700; }
+    tr.dim td { opacity: 0.35; }
+    tbody tr { cursor: pointer; }
+    tbody tr:hover td { background: rgba(34, 228, 255, .08); }
+
+    .map-col { display: grid; gap: 16px; }
+    .map-panel { position: relative; }
+    #mapHint {
+      position: absolute; top: 18px; left: 50%; transform: translateX(-50%); z-index: 1000;
+      max-width: calc(100% - 140px); padding: 8px 14px; border-radius: 8px;
+      background: rgba(7, 10, 16, .92); border: 1px solid var(--cyan); color: var(--text);
+      font-size: 13px; text-align: center; pointer-events: none;
+      box-shadow: 0 0 12px rgba(34, 228, 255, .3);
+    }
+    #mapHint[hidden] { display: none; }
+    .out-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 20px; align-items: start; }
+    .out-grid .stats { margin-top: 0; }
+    .card .table-wrap { max-height: 330px; }
+    .head-links { display: flex; gap: 16px; flex-wrap: wrap; }
+    dialog.modal {
+      width: min(780px, calc(100% - 32px)); max-height: 86vh; overflow: auto;
+      padding: 22px 24px; color: var(--text); background: var(--panel);
+      border: 1px solid var(--border); border-radius: 12px;
+    }
+    dialog.modal::backdrop { background: rgba(0, 0, 0, .65); }
+    dialog.modal ol, dialog.modal ul { padding-left: 20px; margin: 6px 0 10px; }
+    dialog.modal li { line-height: 1.5; margin-bottom: 4px; }
+    dialog.modal a { color: var(--cyan); }
+    dialog.modal strong { color: var(--cyan); font-weight: 600; }
+    .modal-close {
+      position: sticky; top: 0; float: right; width: 32px; height: 32px; padding: 0;
+      display: grid; place-items: center; font-size: 18px; line-height: 1;
+    }
+    #map { width: 100%; height: 780px; border-radius: 8px; overflow: hidden; background: #0b0f16; }
+    #map.adding { cursor: crosshair; }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 8px 4px 2px; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .legend span[hidden] { display: none; }
+    .sw { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+
+    .card ol, .card ul { padding-left: 20px; margin: 6px 0 10px; }
+    .card li { line-height: 1.5; margin-bottom: 4px; }
+    .card a { color: var(--cyan); }
+    .card strong { color: var(--cyan); font-weight: 600; }
+
+    /* ---- map tool rail ---- */
+    .rail {
+      display: flex; flex-direction: column; gap: 2px;
+      background: rgba(15, 20, 29, .94);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px;
+    }
+    .rail .sep { height: 1px; background: var(--border); margin: 3px 2px; }
+    .rail button {
+      position: relative;
+      width: 34px; height: 34px; padding: 0;
+      display: grid; place-items: center;
+      background: transparent; border: 1px solid transparent; border-radius: 7px;
+      color: var(--text);
+    }
+    .rail button:hover { background: var(--panel-2); border-color: var(--border); }
+    .rail button.active { color: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 10px rgba(34, 228, 255, .45); }
+    .rail svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .rail button::after {
+      content: attr(data-tip);
+      position: absolute; left: 42px; top: 50%; transform: translateY(-50%);
+      white-space: nowrap; pointer-events: none;
+      font: 600 12px/1 "Inter", "Segoe UI", Arial, sans-serif;
+      color: var(--text); background: #000; border: 1px solid var(--border);
+      padding: 6px 8px; border-radius: 6px;
+      opacity: 0; transition: opacity .12s;
+    }
+    .rail button:hover::after { opacity: 1; }
+
+    /* ---- Leaflet dark overrides ---- */
+    .leaflet-bar { border: 1px solid var(--border) !important; border-radius: 10px !important; overflow: hidden; }
+    .leaflet-bar a { background: rgba(15, 20, 29, .94); color: var(--text); border-bottom-color: var(--border); width: 34px; height: 34px; line-height: 34px; }
+    .leaflet-bar a:hover { background: var(--panel-2); color: var(--cyan); }
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--panel); color: var(--text); border: 1px solid var(--border); }
+    .leaflet-popup-content { font-size: 13px; line-height: 1.5; }
+    .leaflet-container a.leaflet-popup-close-button { color: var(--muted); }
+    .leaflet-popup-content button { width: auto; margin-top: 8px; padding: 5px 10px; }
+    .leaflet-control-attribution { background: rgba(7, 10, 16, .75) !important; color: var(--muted); }
+    .leaflet-control-attribution a { color: var(--muted); }
+
+    /* ---- map markers ---- */
+    .st-icon, .pr-icon {
+      width: 20px; height: 20px; border-radius: 50%;
+      font: 700 10px/16px "Inter", "Segoe UI", Arial, sans-serif; text-align: center;
+    }
+    .st-icon { background: var(--existing); color: #05070b; border: 2px solid #05070b; }
+    .st-icon.out { background: #6b7585; }
+    .pr-icon { background: var(--cyan); color: #04151a; border: 2px solid #04151a; box-shadow: 0 0 8px rgba(34, 228, 255, .8); }
+
+    @media (max-width: 980px) {
+      .layout, .layout.collapsed { grid-template-columns: 1fr; }
+      .activity { flex-direction: row; flex-wrap: wrap; position: static; }
+      .activity .sep { width: 1px; height: auto; margin: 2px 4px; }
+      .panel { position: static; max-height: none; }
+      .out-grid { grid-template-columns: 1fr; }
+      #map { height: 540px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="layout">
+      <nav class="activity" aria-label="Steps">
+        <button data-tab="region" aria-label="Region">
+          <svg viewBox="0 0 24 24"><path d="M6 9 12.5 4 19 8.5 16.5 19H7.5Z"/><circle cx="6" cy="9" r="1.3"/><circle cx="12.5" cy="4" r="1.3"/><circle cx="19" cy="8.5" r="1.3"/><circle cx="16.5" cy="19" r="1.3"/><circle cx="7.5" cy="19" r="1.3"/></svg>
+          <span>Region</span>
+        </button>
+        <button data-tab="stations" aria-label="Existing stations">
+          <svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.3"/></svg>
+          <span>Stations</span>
+        </button>
+        <button data-tab="run" aria-label="New stations">
+          <svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5Z"/></svg>
+          <span>Run</span>
+        </button>
+        <button data-tab="areas" aria-label="Overlays">
+          <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 9.3h16M4 14.7h16M9.3 4v16M14.7 4v16"/></svg>
+          <span>Overlays</span>
+        </button>
+        <div class="sep"></div>
+        <button data-tab="display" aria-label="Display">
+          <svg viewBox="0 0 24 24"><path d="m12 4 9 5-9 5-9-5Z"/><path d="m3 14 9 5 9-5"/></svg>
+          <span>Display</span>
+        </button>
+        <button id="aboutBtn" aria-label="About the method">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.6v.4"/></svg>
+          <span>About</span>
+        </button>
+      </nav>
+
+      <div class="panel">
+        <div class="section">
+          <h1>Mesonet Siting Tool</h1>
+          <p class="muted">
+            Find the best places for new monitoring stations.
+          </p>
+          <div class="head-links">
+            <button class="link" id="exampleBtn">Load example</button>
+          </div>
+        </div>
+
+        <div class="section tab" data-tab="region">
+          <h2><span class="step">1</span>Region</h2>
+          <div class="row">
+            <label for="regionSelect">US state or country</label>
+            <select id="regionSelect"><option value="">Choose...</option></select>
+          </div>
+          <div class="btns">
+            <button id="boundaryUploadBtn">Upload GeoJSON</button>
+            <button id="clearBoundaryBtn">Clear region</button>
+          </div>
+          <p class="note">You can also draw the region on the map. If your file has several areas, pick one
+            from the list above.</p>
+          <div class="info" id="boundaryInfo">No region yet.</div>
+        </div>
+
+        <div class="section tab" data-tab="stations">
+          <h2><span class="step">2</span>Existing stations</h2>
+          <div class="btns">
+            <button id="stationsUploadBtn">Upload CSV or GeoJSON</button>
+            <button id="addStationsBtn">Add by clicking</button>
+          </div>
+          <div class="info" id="stationInfo">No stations yet. You can also start from scratch.</div>
+          <label class="check"><input type="checkbox" id="includeOutside" checked />
+            Include stations outside the region, such as a neighboring network</label>
+          <p class="note">CSV files need "lat" and "lon" columns. Drag a station to move it, or click it to remove it.</p>
+          <button class="link" id="clearStationsBtn">Remove all stations</button>
+        </div>
+
+        <div class="section tab" data-tab="run">
+          <h2><span class="step">3</span>New stations</h2>
+          <div class="row">
+            <label for="nNew">Number of new stations (1–250)</label>
+            <input id="nNew" type="number" value="10" min="1" max="250" step="1" />
+          </div>
+          <div class="btns">
+            <button id="runBtn" class="primary">Run</button>
+            <button id="cancelBtn" disabled>Cancel</button>
+          </div>
+          <div class="progress"><div id="progressBar"></div></div>
+          <div class="status" id="status"></div>
+        </div>
+
+        <div class="section tab" data-tab="areas">
+          <h2><span class="step">4</span>Overlays<span class="opt">optional</span></h2>
+          <div class="row">
+            <label for="zoneSelect">Show a grid or boundaries and count the stations in each</label>
+            <select id="zoneSelect">
+              <option value="">None</option>
+              <option value="ease36">EASE-Grid 2.0 (36-km cells)</option>
+              <option value="counties">US counties</option>
+              <option value="file">Upload boundaries (GeoJSON)...</option>
+            </select>
+          </div>
+          <div id="zonePanel" hidden>
+            <p class="note" id="zoneNote"></p>
+          </div>
+        </div>
+
+        <div class="section tab" data-tab="display">
+          <h2>Display</h2>
+          <div class="slider-head">
+            <label for="footprintKm">Circle around each station</label>
+            <span class="val" id="footprintVal">Off</span>
+          </div>
+          <input id="footprintKm" type="range" min="0" max="150" step="5" value="0" />
+          <p class="note">For display only. It does not change the results.</p>
+          <label class="check"><input type="checkbox" id="showGap" checked /> Empty area filled by the last new station</label>
+          <label class="check"><input type="checkbox" id="showVoronoi" /> Area represented by each station (Voronoi)</label>
+          <label class="check"><input type="checkbox" id="showLargest" /> Largest area represented by one station</label>
+        </div>
+      </div>
+
+      <div class="map-col">
+        <div class="map-panel">
+          <div id="map"></div>
+          <div class="legend">
+            <span><i class="sw" style="background:var(--existing)"></i>Existing station</span>
+            <span><i class="sw" style="background:var(--cyan);box-shadow:0 0 6px var(--cyan)"></i>New station (build order)</span>
+            <span><i class="sw" style="border:3px solid var(--pink)"></i>Empty area filled by the last new station</span>
+            <span><i class="sw" style="width:16px;height:11px;border-radius:2px;border:2px solid var(--lime)"></i>Boundary</span>
+            <span class="largest-legend" hidden><i class="sw" style="width:16px;height:11px;border-radius:2px;background:rgba(167,139,250,.45);border:2px solid var(--violet)"></i>Largest area represented by one station</span>
+            <span class="zone-legend" hidden><i class="sw" style="border-radius:2px;background:rgba(182,255,59,.35)"></i>1 station</span>
+            <span class="zone-legend" hidden><i class="sw" style="border-radius:2px;background:rgba(255,210,63,.55)"></i>2 or more stations</span>
+          </div>
+          <div id="mapHint" hidden></div>
+        </div>
+
+        <div class="card" id="resultsSection" hidden>
+          <h2>Results</h2>
+          <p class="note" id="exampleNote" hidden>Example: the Kansas Mesonet as of 2016 (56 stations), the network
+            analyzed in the figures and tables of Patrignani et al. (2020).</p>
+          <div class="out-grid">
+            <div>
+              <div class="slider-head">
+                <label for="showK">New stations shown</label>
+                <span class="val"><span id="showKLabel">0</span> / <span id="showKMax">0</span></span>
+              </div>
+              <input id="showK" type="range" min="0" max="1" value="1" step="1" />
+              <div class="stats">
+                <div class="stat-head"><span></span><span>Existing</span><span>+ new</span></div>
+                <div class="stat"><span>Stations</span><span class="v" id="stN0">-</span><span class="v new" id="stN1">-</span></div>
+                <div class="stat"><span>Largest empty area (km²)</span><span class="v" id="stLea0">-</span><span class="v new" id="stLea1">-</span></div>
+                <div class="stat"><span>Median distance to a station (km)</span><span class="v" id="stMed0">-</span><span class="v new" id="stMed1">-</span></div>
+                <div class="stat"><span>Mean distance to a station (km)</span><span class="v" id="stMean0">-</span><span class="v new" id="stMean1">-</span></div>
+                <div class="stat"><span>Longest distance to a station (km)</span><span class="v" id="stMax0">-</span><span class="v new" id="stMax1">-</span></div>
+                <div class="stat"><span>Largest area represented by one station (km²)</span><span class="v" id="stLsa0">-</span><span class="v new" id="stLsa1">-</span></div>
+                <div class="stat"><span>Gini coefficient (0 to 1)</span><span class="v" id="stGini0">-</span><span class="v new" id="stGini1">-</span></div>
+                <div class="stat" id="covRow" hidden><span id="covLabel">Area within footprint</span><span class="v" id="stCov0">-</span><span class="v new" id="stCov1">-</span></div>
+              </div>
+            </div>
+            <div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Station</th><th>Lat</th><th>Lon</th><th>Empty area (km²)</th><th>Radius (km)</th></tr></thead>
+                  <tbody id="resultsBody"></tbody>
+                </table>
+              </div>
+              <div class="btns" style="margin-top:10px">
+                <button id="dlCsvBtn">Download CSV</button>
+                <button id="dlGeoBtn">Download GeoJSON</button>
+              </div>
+              <p class="note">Downloads include the new stations shown on the map.</p>
+              <p class="note">Distances go from every point in the region to its closest station. Each station
+                represents the part of the region closest to it. The Gini coefficient measures how unequal those
+                areas are: 0 means every station represents the same area (evenly spread), and values near 1 mean
+                stations are bunched together (Patrignani et al., 2020).</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="zoneCard" hidden>
+          <h2 id="zoneTitle">Stations per area</h2>
+          <div class="out-grid">
+            <div>
+              <div class="info" id="zoneInfo"></div>
+              <div class="stats">
+                <div class="stat-head"><span></span><span>Existing</span><span>+ new</span></div>
+                <div class="stat"><span><span class="zUnit">Areas</span> with at least one station</span><span class="v" id="zOcc0">-</span><span class="v new" id="zOcc1">-</span></div>
+                <div class="stat"><span><span class="zUnit">Areas</span> with 2 or more stations</span><span class="v" id="zMulti0">-</span><span class="v new" id="zMulti1">-</span></div>
+              </div>
+            </div>
+            <div>
+              <div class="row">Station count for each area</div>
+              <div class="btns">
+                <button id="dlZonesCsvBtn">Download CSV</button>
+                <button id="dlZonesGeoBtn">Download GeoJSON</button>
+              </div>
+              <button id="dlStationZonesBtn">Download stations with their area</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <dialog class="modal" id="aboutDialog" aria-labelledby="aboutTitle">
+    <button class="modal-close" id="aboutClose" aria-label="Close">&times;</button>
+          <h2 id="aboutTitle">About the method</h2>
+          <p>
+            Patrignani, A., Mohankumar, N., Redmond, C., Santos, E. A., &amp; Knapp, M. (2020).
+            Optimizing the spatial configuration of mesoscale environmental monitoring networks using a
+            geometric approach. <em>Journal of Atmospheric and Oceanic Technology</em>, 37(5), 943–956.
+            <a href="https://doi.org/10.1175/JTECH-D-19-0167.1" target="_blank" rel="noopener">doi:10.1175/JTECH-D-19-0167.1</a>
+          </p>
+
+          <h3>How it works</h3>
+          <ol>
+            <li>A Voronoi diagram splits the region among the existing stations. Its vertices, and the points
+              where its edges cross the boundary, are the candidate centers of unmonitored areas.</li>
+            <li>Around each candidate, the largest circle with no station inside is drawn. Its radius is the
+              distance to the nearest station.</li>
+            <li>Each circle is clipped to the boundary. The one with the most area inside the region is the
+              largest empty area, and the new station goes at its centroid.</li>
+            <li>The new station is added to the network and the process repeats, giving a build order for
+              as many stations as needed.</li>
+          </ol>
+          <p>
+            Because circles are clipped, sites on the border count only the area inside the region. With no stations, the first
+            site is the point farthest from the boundary. Distances and areas are computed on an equal-area
+            projection centered on the region, so results are valid anywhere on Earth.
+          </p>
+
+          <h3>Why not simple buffers?</h3>
+          <p>
+            A common GIS approach draws a fixed buffer around each station and places the next one in the
+            largest uncovered area. In tests on 300 synthetic networks worldwide, the largest-empty-area
+            method left smaller gaps than 25-km buffers in 88% of cases when adding to an existing network,
+            and in 79–100% of cases when building one from scratch. Common pitfalls of the buffer approach:
+          </p>
+          <ul>
+            <li><strong>Arbitrary radius.</strong> Change the buffer size and the recommended site can move by
+              several km.</li>
+            <li><strong>Merged gaps.</strong> With small buffers the uncovered area is one large connected shape,
+              and its centroid sits in the middle of the region, so new stations can cluster together instead of
+              filling the real gaps.</li>
+            <li><strong>Slivers.</strong> Uncovered areas are often long, thin strips along borders whose centroid lands
+              on the boundary or next to an existing station.</li>
+            <li><strong>Distortion.</strong> Buffers and centroids computed in degrees of latitude and longitude are
+              distorted away from the equator.</li>
+          </ul>
+          <p>Here, buffers are only drawn as each station's footprint.</p>
+          </dialog>
+
+  <input id="boundaryFile" type="file" accept=".geojson,.json" hidden />
+  <input id="stationsFile" type="file" accept=".csv,.txt,.geojson,.json" hidden />
+  <input id="zonesFile" type="file" accept=".geojson,.json" hidden />
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.17.0/dist/leaflet-geoman.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-delaunay@6.0.4/dist/d3-delaunay.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/polygon-clipping@0.15.7/dist/polygon-clipping.umd.min.js"></script>
+  <script src="lea.js"></script>
+  <script src="ease.js"></script>
+  <script src="data/us_states.js"></script>
+  <script src="data/kansas_example.js"></script>
+  <script src="data/countries.js"></script>
+  <script>
+    const MAX_NEW = 250;
+    const COLORS = { cyan: '#22e4ff', pink: '#ff4fd8', lime: '#b6ff3b', violet: '#a78bfa', amber: '#ffd23f', white: '#ffffff' };
+    const EASE_GRID = EASE.makeGrid('M36');
+    const MAX_ZONES_DRAWN = 20000;  // larger sets: statistics only, areas not drawn
+    const MIN_ZONE_FRACTION = 0.02; // polygon zones count if at least 2% of their area is in the region
+
+    const el = id => document.getElementById(id);
+
+    // ------------------------------------------------------------------------
+    // Map and layers
+    // ------------------------------------------------------------------------
+    const map = L.map('map').setView([38.5, -98.5], 6);
+    const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/';
+    L.tileLayer(ESRI + 'World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 16,
+      attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors'
+    }).addTo(map);
+    L.tileLayer(ESRI + 'World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, pane: 'shadowPane' }).addTo(map);
+    map.pm.setGlobalOptions({
+      snappable: false,
+      allowSelfIntersection: false,
+      templineStyle: { color: COLORS.lime },
+      hintlineStyle: { color: COLORS.lime, dashArray: '5 5' },
+      pathOptions: { color: COLORS.lime, weight: 2, fill: false }
+    });
+
+    const zoneRenderer = L.canvas({ padding: 0.5 });
+    const layers = {
+      zones: L.featureGroup().addTo(map),
+      boundary: L.featureGroup().addTo(map),
+      voronoi: L.featureGroup().addTo(map),
+      largest: L.featureGroup().addTo(map),
+      footprint: L.featureGroup().addTo(map),
+      gap: L.featureGroup().addTo(map),
+      stations: L.featureGroup().addTo(map),
+      proposed: L.featureGroup().addTo(map)
+    };
+
+    const state = {
+      boundary: null,     // MultiPolygon [lon, lat]
+      dom: null,          // projected domain from LEA.buildDomain
+      stations: [],       // { name, lat, lon, marker }; map number = position + 1
+      results: null,      // { base, first, steps, final }
+      zones: null,        // areas of the chosen zone set that touch the region (cached)
+      proposedMarkers: [],
+      run: null,
+      mode: null          // 'add' | 'edit' | 'draw-poly' | 'draw-rect' | null
+    };
+
+    const stationIcon = (n, out) => L.divIcon({ className: '', html: `<div class="st-icon${out ? ' out' : ''}">${n}</div>`, iconSize: [20, 20], iconAnchor: [10, 10] });
+    const proposedIcon = n => L.divIcon({ className: '', html: `<div class="pr-icon">${n}</div>`, iconSize: [20, 20], iconAnchor: [10, 10] });
+
+    // ------------------------------------------------------------------------
+    // Tool rail
+    // ------------------------------------------------------------------------
+    const ICONS = {
+      polygon: '<path d="M6 9 12.5 4 19 8.5 16.5 19H7.5Z"/><circle cx="6" cy="9" r="1.3"/><circle cx="12.5" cy="4" r="1.3"/><circle cx="19" cy="8.5" r="1.3"/><circle cx="16.5" cy="19" r="1.3"/><circle cx="7.5" cy="19" r="1.3"/>',
+      rect: '<rect x="4" y="6" width="16" height="12" rx="1"/>',
+      edit: '<path d="M4 20h4L19 9l-4-4L4 16Z"/><path d="m13.5 6.5 4 4"/>',
+      addPin: '<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><path d="M12 7v6M9 10h6"/>',
+      fit: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>'
+    };
+    const svg = paths => `<svg viewBox="0 0 24 24">${paths}</svg>`;
+    const TOOLS = [
+      { id: 'tDrawPoly', icon: svg(ICONS.polygon), tip: 'Draw region (polygon)', act: () => startDraw('Polygon') },
+      { id: 'tDrawRect', icon: svg(ICONS.rect), tip: 'Draw region (rectangle)', act: () => startDraw('Rectangle') },
+      { id: 'tEdit', icon: svg(ICONS.edit), tip: 'Edit region vertices', act: toggleEdit },
+      'sep',
+      { id: 'tAdd', icon: svg(ICONS.addPin), tip: 'Add stations by clicking', act: toggleAdd },
+      'sep',
+      { id: 'tFit', icon: svg(ICONS.fit), tip: 'Zoom to network', act: fitAll }
+    ];
+
+    const Rail = L.Control.extend({
+      options: { position: 'topleft' },
+      onAdd() {
+        const div = L.DomUtil.create('div', 'rail');
+        TOOLS.forEach(t => {
+          if (t === 'sep') { L.DomUtil.create('div', 'sep', div); return; }
+          const b = L.DomUtil.create('button', '', div);
+          b.id = t.id; b.type = 'button'; b.innerHTML = t.icon;
+          b.dataset.tip = t.tip; b.setAttribute('aria-label', t.tip);
+          L.DomEvent.on(b, 'click', e => { L.DomEvent.stop(e); t.act(); });
+        });
+        L.DomEvent.disableClickPropagation(div);
+        L.DomEvent.disableScrollPropagation(div);
+        return div;
+      }
+    });
+    map.addControl(new Rail());
+
+    function setStatus(msg) { el('status').textContent = msg; }   // run progress (step 3)
+
+    // short notices and mode hints shown at the top of the map
+    let noticeTimer = null;
+    function notify(msg) {
+      if (state.mode) return;            // keep the active mode's hint visible
+      clearTimeout(noticeTimer);
+      el('mapHint').textContent = msg;
+      el('mapHint').hidden = false;
+      noticeTimer = setTimeout(() => { el('mapHint').hidden = true; }, 3500);
+    }
+    function setHint(msg) {
+      clearTimeout(noticeTimer);
+      el('mapHint').textContent = msg || '';
+      el('mapHint').hidden = !msg;
+    }
+    function fmt(v, d = 0) { return Number.isFinite(v) ? v.toLocaleString(undefined, { maximumFractionDigits: d, minimumFractionDigits: d }) : '-'; }
+    function toLatLngs(mp) {
+      const inv = state.dom.proj.inv;
+      return mp.map(poly => poly.map(ring => ring.map(([x, y]) => { const [lon, lat] = inv(x, y); return [lat, lon]; })));
+    }
+    function fitAll() {
+      const b = L.latLngBounds([]);
+      [layers.boundary, layers.stations, layers.proposed].forEach(g => { if (g.getLayers().length) b.extend(g.getBounds()); });
+      if (b.isValid()) map.fitBounds(b, { padding: [24, 24] });
+    }
+
+    // ------------------------------------------------------------------------
+    // Modes (draw / edit / add stations)
+    // ------------------------------------------------------------------------
+    function setMode(mode) {
+      if (state.mode === 'edit') layers.boundary.eachLayer(l => l.pm && l.pm.disable());
+      map.pm.disableDraw();
+      state.mode = mode;
+      if (mode === 'edit') layers.boundary.eachLayer(l => l.pm.enable({ allowSelfIntersection: false }));
+      el('tDrawPoly').classList.toggle('active', mode === 'draw-poly');
+      el('tDrawRect').classList.toggle('active', mode === 'draw-rect');
+      el('tEdit').classList.toggle('active', mode === 'edit');
+      el('tAdd').classList.toggle('active', mode === 'add');
+      el('addStationsBtn').classList.toggle('active', mode === 'add');
+      el('addStationsBtn').textContent = mode === 'add' ? 'Done adding' : 'Add by clicking';
+      el('map').classList.toggle('adding', mode === 'add');
+      setHint({
+        add: 'Click the map to add stations. Press Esc when done.',
+        edit: 'Drag the vertices to reshape the region. Press Esc when done.',
+        'draw-poly': 'Click to add vertices; click the first vertex to close the region. Esc cancels.',
+        'draw-rect': 'Click two opposite corners. Esc cancels.'
+      }[mode] || '');
+    }
+
+    function startDraw(shape) {
+      const mode = shape === 'Polygon' ? 'draw-poly' : 'draw-rect';
+      if (state.mode === mode) { setMode(null); return; }
+      setMode(mode);
+      map.pm.enableDraw(shape);
+    }
+
+    function toggleAdd() { setMode(state.mode === 'add' ? null : 'add'); }
+
+    function toggleEdit() {
+      if (!state.boundary) { notify('Choose, upload, or draw a region first.'); return; }
+      setMode(state.mode === 'edit' ? null : 'edit');
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && state.mode) setMode(null); });
+
+    // ------------------------------------------------------------------------
+    // Boundary
+    // ------------------------------------------------------------------------
+    function polygonsFromGeoJSON(obj) {
+      const out = [];
+      const visit = g => {
+        if (!g) return;
+        if (g.type === 'FeatureCollection') g.features.forEach(f => visit(f.geometry));
+        else if (g.type === 'Feature') visit(g.geometry);
+        else if (g.type === 'GeometryCollection') g.geometries.forEach(visit);
+        else if (g.type === 'Polygon') out.push(g.coordinates);
+        else if (g.type === 'MultiPolygon') g.coordinates.forEach(c => out.push(c));
+      };
+      visit(obj);
+      if (!out.length) throw new Error('The boundary must contain at least one Polygon or MultiPolygon.');
+      return polygonClipping.union(...out.map(p => [p]));
+    }
+
+    function setBoundary(geojson, { redraw = true, fit = true } = {}) {
+      const mp = polygonsFromGeoJSON(geojson);
+      state.boundary = mp;
+      state.dom = LEA.buildDomain(mp);
+      state.zones = null;
+      if (redraw) drawBoundary();
+      refreshStations();
+      invalidate();
+      el('boundaryInfo').innerHTML =
+        `Region: <b>${fmt(state.dom.area)} km²</b>${mp.length > 1 ? ` in ${mp.length} parts` : ''}`;
+      if (fit) map.fitBounds(layers.boundary.getBounds(), { padding: [24, 24] });
+    }
+
+    function drawBoundary() {
+      layers.boundary.clearLayers();
+      if (!state.boundary) return;
+      state.boundary.forEach(poly => {
+        const layer = L.polygon(poly.map(ring => ring.map(([lon, lat]) => [lat, lon])),
+          { color: COLORS.lime, weight: 2, fill: false, interactive: false });
+        layer.on('pm:edit', onBoundaryEdited);
+        layers.boundary.addLayer(layer);
+      });
+      if (state.mode === 'edit') setMode(null);
+    }
+
+    function onBoundaryEdited() {
+      try { setBoundary(layers.boundary.toGeoJSON(), { redraw: false, fit: false }); }
+      catch (err) { notify(`Boundary edit ignored: ${err.message}`); }
+    }
+
+    function clearBoundary() {
+      if (!state.boundary) return;
+      setMode(null);
+      state.boundary = null;
+      state.dom = null;
+      state.zones = null;
+      layers.boundary.clearLayers();
+      refreshStations();
+      invalidate();
+      el('boundaryInfo').textContent = 'No region yet.';
+      el('regionSelect').value = '';
+      notify('Region cleared.');
+    }
+
+    map.on('pm:create', e => {
+      const gj = e.layer.toGeoJSON();
+      map.removeLayer(e.layer);
+      setMode(null);
+      try { setBoundary(gj, { fit: false }); notify('Region drawn.'); }
+      catch (err) { alert(err.message); }
+    });
+
+    // ------------------------------------------------------------------------
+    // Stations (numbered 1..n in the order they were loaded or clicked)
+    // ------------------------------------------------------------------------
+    function isInside(st) {
+      if (!state.dom) return true;
+      const [x, y] = state.dom.proj.fwd(st.lon, st.lat);
+      return LEA.contains(state.dom, x, y);
+    }
+
+    function addStation(lat, lon, name) {
+      const st = { name: name || '', lat, lon };
+      st.marker = L.marker([lat, lon], { icon: stationIcon(state.stations.length + 1, false), draggable: true, pmIgnore: true });
+      st.marker.on('dragend', () => {
+        const p = st.marker.getLatLng();
+        st.lat = p.lat; st.lon = p.lng;
+        refreshStations(); invalidate();
+      });
+      st.marker.bindPopup(() => {
+        const n = state.stations.indexOf(st) + 1;
+        const div = document.createElement('div');
+        div.innerHTML = `<strong></strong><br>${st.lat.toFixed(4)}, ${st.lon.toFixed(4)}<br>`;
+        div.querySelector('strong').textContent = `Station ${n}${st.name ? ` · ${st.name}` : ''}`;
+        const btn = document.createElement('button');
+        btn.textContent = 'Remove station';
+        btn.onclick = () => removeStation(st);
+        div.appendChild(btn);
+        return div;
+      });
+      layers.stations.addLayer(st.marker);
+      state.stations.push(st);
+      return st;
+    }
+
+    function removeStation(st) {
+      layers.stations.removeLayer(st.marker);
+      state.stations = state.stations.filter(s => s !== st);
+      refreshStations(); invalidate();
+    }
+
+    function clearStations() {
+      if (!state.stations.length) return;
+      layers.stations.clearLayers();
+      state.stations = [];
+      refreshStations(); invalidate();
+      notify('Stations deleted.');
+    }
+
+    function refreshStations() {
+      let outside = 0;
+      state.stations.forEach((st, i) => {
+        const out = !isInside(st);
+        if (out) outside++;
+        st.marker.setIcon(stationIcon(i + 1, out));
+      });
+      const n = state.stations.length;
+      el('stationInfo').innerHTML = n
+        ? `Existing stations: <b>${n}</b>${outside ? ` (${outside} outside the region)` : ''}`
+        : 'No stations yet. You can also start from scratch.';
+    }
+
+    map.on('click', e => {
+      if (state.mode !== 'add') return;
+      addStation(e.latlng.lat, e.latlng.lng);
+      refreshStations(); invalidate();
+    });
+
+    // CSV / GeoJSON parsing
+    function splitCSVLine(line) {
+      const out = []; let cur = '', q = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') { if (q && line[i + 1] === '"') { cur += '"'; i++; } else q = !q; }
+        else if (ch === ',' && !q) { out.push(cur); cur = ''; }
+        else cur += ch;
+      }
+      out.push(cur);
+      return out.map(s => s.trim());
+    }
+
+    function stationsFromCSV(text) {
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) throw new Error('The CSV file is empty.');
+      const head = splitCSVLine(lines[0]).map(h => h.toLowerCase());
+      const find = names => head.findIndex(h => names.includes(h));
+      const iLat = find(['lat', 'latitude', 'y']);
+      const iLon = find(['lon', 'lng', 'long', 'longitude', 'x']);
+      const iName = find(['station', 'name', 'site', 'id', 'station_name']);
+      if (iLat < 0 || iLon < 0) throw new Error('The CSV needs latitude and longitude columns (e.g., "lat" and "lon").');
+      const out = [];
+      lines.slice(1).forEach(l => {
+        const v = splitCSVLine(l);
+        const lat = Number(v[iLat]), lon = Number(v[iLon]);
+        if (Number.isFinite(lat) && Number.isFinite(lon)) out.push({ lat, lon, name: iName >= 0 ? v[iName] : '' });
+      });
+      return out;
+    }
+
+    function stationsFromGeoJSON(obj) {
+      const out = [];
+      const props = p => p ? (p.name || p.station || p.site || p.id || '') : '';
+      const feats = obj.type === 'FeatureCollection' ? obj.features : obj.type === 'Feature' ? [obj] : [{ geometry: obj }];
+      feats.forEach(f => {
+        const g = f.geometry;
+        if (!g) return;
+        if (g.type === 'Point') out.push({ lon: g.coordinates[0], lat: g.coordinates[1], name: props(f.properties) });
+        if (g.type === 'MultiPoint') g.coordinates.forEach(c => out.push({ lon: c[0], lat: c[1], name: props(f.properties) }));
+      });
+      return out;
+    }
+
+    // ------------------------------------------------------------------------
+    // Run
+    // ------------------------------------------------------------------------
+    function baseStationsXY() {
+      const useOutside = el('includeOutside').checked;
+      return state.stations
+        .filter(st => useOutside || isInside(st))
+        .map(st => state.dom.proj.fwd(st.lon, st.lat));
+    }
+
+    async function run() {
+      if (!state.dom) { alert('Choose, upload, or draw a region first (step 1).'); return; }
+      const N = Math.round(Number(el('nNew').value));
+      if (!(N >= 1 && N <= MAX_NEW)) { alert(`Choose between 1 and ${MAX_NEW} new stations.`); return; }
+      setMode(null);
+      invalidate();
+
+      const base = baseStationsXY();
+      const pts = base.slice();
+      const steps = [];
+      let final = null;
+      const run = state.run = { cancel: false };
+      el('runBtn').disabled = true; el('cancelBtn').disabled = false;
+      const t0 = performance.now();
+      let lastYield = t0;
+
+      for (let k = 0; k <= N; k++) {       // N picks, plus one more step for the remaining gap
+        const step = LEA.leaStep(pts, state.dom);
+        if (!step) break;
+        if (k < N) { steps.push(step); pts.push([step.x, step.y]); }
+        else final = step;
+        el('progressBar').style.width = `${(100 * (k + 1)) / (N + 1)}%`;
+        if (performance.now() - lastYield > 40) {
+          setStatus(`Placing station ${Math.min(k + 1, N)} of ${N}...`);
+          await new Promise(r => setTimeout(r));
+          lastYield = performance.now();
+        }
+        if (run.cancel) break;
+      }
+
+      el('runBtn').disabled = false; el('cancelBtn').disabled = true;
+      if (state.run !== run) return;
+      state.run = null;
+      if (!steps.length) { setStatus('No location found.'); return; }
+
+      // new stations continue the numbering of the existing ones
+      state.results = { base, first: state.stations.length + 1, steps, final };
+      buildResults();
+      setStatus(run.cancel ? `Cancelled after ${steps.length} new station${steps.length > 1 ? 's' : ''}.` : '');
+    }
+
+    function invalidate() {
+      if (state.run) state.run.cancel = true;
+      state.results = null;
+      state.proposedMarkers = [];
+      ['proposed', 'gap'].forEach(k => layers[k].clearLayers());
+      el('resultsSection').hidden = true;
+      el('progressBar').style.width = '0';
+      drawFootprints();
+      drawVoronoi();
+      drawZones();
+    }
+
+    // ------------------------------------------------------------------------
+    // Results
+    // ------------------------------------------------------------------------
+    function buildResults() {
+      const { steps, first } = state.results;
+      const inv = state.dom.proj.inv;
+      steps.forEach(s => { [s.lon, s.lat] = inv(s.x, s.y); });
+
+      state.proposedMarkers = steps.map((s, i) =>
+        L.marker([s.lat, s.lon], { icon: proposedIcon(first + i), pmIgnore: true, zIndexOffset: 1000 })
+          .bindPopup(`<strong>New station ${first + i}</strong> (build order ${i + 1})<br>${s.lat.toFixed(4)}, ${s.lon.toFixed(4)}<br>` +
+            `Empty area filled: ${fmt(s.area)} km²<br>Circle radius: ${fmt(s.r, 1)} km`));
+
+      el('resultsBody').innerHTML = steps.map((s, i) =>
+        `<tr data-i="${i}"><td>${first + i}</td><td>${s.lat.toFixed(4)}</td><td>${s.lon.toFixed(4)}</td>` +
+        `<td>${fmt(s.area)}</td><td>${fmt(s.r, 1)}</td></tr>`).join('');
+
+      const slider = el('showK');
+      slider.max = steps.length;
+      slider.value = steps.length;
+      el('showKMax').textContent = steps.length;
+      el('resultsSection').hidden = false;
+      const ex = state.example;
+      el('exampleNote').hidden = !(ex && ex.boundary === state.boundary && ex.sig === stationSignature());
+      render();
+    }
+
+    function shownK() { return state.results ? Number(el('showK').value) : 0; }
+    function footprintKm() { return Number(el('footprintKm').value); }
+
+    function networkXY(k) {
+      const r = state.results;
+      return r.base.concat(r.steps.slice(0, k).map(s => [s.x, s.y]));
+    }
+
+    function render() {
+      const res = state.results;
+      if (!res) return;
+      const k = shownK();
+      el('showKLabel').textContent = k;
+
+      layers.proposed.clearLayers();
+      state.proposedMarkers.slice(0, k).forEach(m => layers.proposed.addLayer(m));
+      document.querySelectorAll('#resultsBody tr').forEach(tr => tr.classList.toggle('dim', Number(tr.dataset.i) >= k));
+
+      // largest empty area left after k new stations (for the statistics)
+      const gap = k < res.steps.length ? res.steps[k] : res.final;
+
+      // map: the empty area filled by the last new station shown (station k sits at its centroid)
+      layers.gap.clearLayers();
+      const filled = k > 0 ? res.steps[k - 1] : null;
+      if (el('showGap').checked && filled) {
+        // full empty circle (faint) and the part inside the boundary
+        const inv = state.dom.proj.inv;
+        const circle = Array.from({ length: 129 }, (_, i) => {
+          const t = (2 * Math.PI * i) / 128;
+          const [lon, lat] = inv(filled.cx + filled.r * Math.cos(t), filled.cy + filled.r * Math.sin(t));
+          return [lat, lon];
+        });
+        L.polyline(circle, { color: COLORS.pink, weight: 1, opacity: 0.5, dashArray: '3 5', interactive: false }).addTo(layers.gap);
+        L.polygon(toLatLngs(filled.shape), { color: COLORS.pink, weight: 2, dashArray: '6 4', fillColor: COLORS.pink, fillOpacity: 0.12, interactive: false })
+          .addTo(layers.gap);
+      }
+
+      drawFootprints();
+      drawVoronoi();
+      drawZones();
+      updateStats(k, gap);
+    }
+
+    function drawFootprints() {
+      layers.footprint.clearLayers();
+      const r = footprintKm();
+      el('footprintVal').textContent = r > 0 ? `${r} km` : 'Off';
+      if (!(r > 0)) return;
+      const opts = c => ({ radius: r * 1000, color: c, weight: 1, opacity: 0.6, fillColor: c, fillOpacity: 0.08, interactive: false, pmIgnore: true });
+      state.stations.forEach(st => L.circle([st.lat, st.lon], opts(COLORS.white)).addTo(layers.footprint));
+      if (state.results) state.results.steps.slice(0, shownK())
+        .forEach(s => L.circle([s.lat, s.lon], opts(COLORS.cyan)).addTo(layers.footprint));
+    }
+
+    /** Stations currently on the map (existing + new stations shown), in km. */
+    function currentNetworkXY() {
+      if (!state.dom) return [];
+      return state.results ? networkXY(shownK()) : baseStationsXY();
+    }
+
+    let voronoiTimer = null;
+    function drawVoronoi() {
+      clearTimeout(voronoiTimer);
+      layers.voronoi.clearLayers();
+      layers.largest.clearLayers();
+      const showCells = el('showVoronoi').checked, showLargest = el('showLargest').checked;
+      document.querySelectorAll('.largest-legend').forEach(e => { e.hidden = !showLargest; });
+      if (!state.dom || !(showCells || showLargest)) return;
+      voronoiTimer = setTimeout(() => {
+        const pts = currentNetworkXY();
+        if (!pts.length) return;
+        if (showCells) LEA.voronoiCells(pts, state.dom).forEach(c =>
+          L.polygon(toLatLngs(c), { color: COLORS.violet, weight: 1, opacity: 0.8, fill: false, interactive: false }).addTo(layers.voronoi));
+        if (showLargest) {
+          const areas = LEA.supportAreas(pts, state.dom);
+          const i = areas.indexOf(Math.max(...areas));
+          L.polygon(toLatLngs(LEA.supportCell(pts, state.dom, i)),
+            { color: COLORS.violet, weight: 2, fillColor: COLORS.violet, fillOpacity: 0.3, pmIgnore: true })
+            .bindTooltip(`Largest area represented by one station: ${fmt(areas[i])} km²`, { sticky: true })
+            .addTo(layers.largest);
+        }
+      }, 120);
+    }
+
+    // ------------------------------------------------------------------------
+    // Stations per area: EASE-Grid cells, US counties, or uploaded zones
+    // (a summary only; it never changes where new stations go)
+    // ------------------------------------------------------------------------
+    const ZONE_KINDS = {
+      ease36: { label: 'EASE-Grid 2.0 (36-km cells)', plural: 'Cells', unit: 'cell',
+        note: 'The 36-km grid used by NASA SMAP (EASE-Grid 2.0, EPSG:6933). Rows and columns start at 0 in the upper-left corner. Only cells that touch the region are used. The National Coordinated Soil Moisture Monitoring Network suggests at least one station per 36-km cell (Baker et al., 2022, <a href="https://doi.org/10.1175/BAMS-D-21-0178.1" target="_blank" rel="noopener">BAMS</a>).' },
+      counties: { label: 'US counties', plural: 'Counties', unit: 'county',
+        note: 'US Census 2010 counties, including Alaska, Hawaii and Puerto Rico. A county is used if at least 2% of it is inside the region.' },
+      file: { label: 'Uploaded boundaries', plural: 'Areas', unit: 'area',
+        note: 'Areas from your file. An area is used if at least 2% of it is inside the region.' }
+    };
+    let zoneFile = null;   // { name, features }
+
+    function zoneKind() { return el('zoneSelect').value; }
+
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const tag = document.createElement('script');
+        tag.src = src; tag.onload = resolve;
+        tag.onerror = () => reject(new Error(`Could not load ${src}`));
+        document.head.appendChild(tag);
+      });
+    }
+
+    function toMultiPolygon(g) { return g.type === 'Polygon' ? [g.coordinates] : g.coordinates; }
+
+    function bboxLonLat(mp) {
+      let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+      for (const poly of mp) for (const [lon, lat] of poly[0]) {
+        if (lon < w) w = lon; if (lon > e) e = lon; if (lat < s) s = lat; if (lat > n) n = lat;
+      }
+      return [w, s, e, n];
+    }
+
+    function pointInLonLat(lon, lat, mp) {
+      let inside = false;
+      for (const poly of mp) for (const ring of poly) {
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+          const [xi, yi] = ring[i], [xj, yj] = ring[j];
+          if ((yi > lat) !== (yj > lat) && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+        }
+      }
+      return inside;
+    }
+
+    /** Polygon zones that overlap the region, with the share of each zone inside it. */
+    function polygonZones(features) {
+      const [bw, bs, be, bn] = bboxLonLat(state.boundary);
+      const fwd = state.dom.proj.fwd;
+      const out = [];
+      features.forEach((f, i) => {
+        if (!f.geometry || !['Polygon', 'MultiPolygon'].includes(f.geometry.type)) return;
+        const mp = toMultiPolygon(f.geometry);
+        const bb = bboxLonLat(mp);
+        if (bb[0] > be || bb[2] < bw || bb[1] > bn || bb[3] < bs) return;
+        const xy = mp.map(poly => poly.map(ring => ring.map(([lon, lat]) => fwd(lon, lat))));
+        const full = LEA.areaCentroid(polygonClipping.union(xy)).area;
+        const inside = LEA.areaCentroid(polygonClipping.intersection(state.dom.mp, xy)).area;
+        const fraction = full > 0 ? Math.min(1, inside / full) : 0;
+        if (fraction < MIN_ZONE_FRACTION) return;
+        const p = f.properties || {};
+        out.push({ id: String(p.id ?? p.GEOID ?? p.GEO_ID ?? i + 1), name: featureName(f, i), mp, bbox: bb, fraction });
+      });
+      return out;
+    }
+
+    /** Zones of the chosen kind that touch the region (cached until the region or kind changes). */
+    function regionZones() {
+      const kind = zoneKind();
+      if (!kind || !state.boundary) return null;
+      if (state.zones && state.zones.kind === kind) return state.zones.list;
+      let list;
+      if (kind === 'ease36') {
+        const contains = (lon, lat) => { const [x, y] = state.dom.proj.fwd(lon, lat); return LEA.contains(state.dom, x, y); };
+        list = EASE_GRID.cellsInRegion(state.boundary, contains).map(c => ({
+          id: `${c.row}-${c.col}`, name: `Row ${c.row}, column ${c.col}`, row: c.row, col: c.col,
+          bounds: EASE_GRID.bounds(c.row, c.col)
+        }));
+      } else if (kind === 'counties') {
+        if (!window.US_COUNTIES) return 'loading';
+        list = polygonZones(US_COUNTIES.features);
+      } else {
+        if (!zoneFile) return null;
+        list = polygonZones(zoneFile.features);
+      }
+      state.zones = { kind, list };
+      return list;
+    }
+
+    /** Existing stations plus the new stations shown, each with the id of the area it falls in. */
+    function stationsWithZones(zones) {
+      const list = state.stations.map((st, i) => ({ station: i + 1, type: 'existing', name: st.name, lat: st.lat, lon: st.lon }));
+      if (state.results) shownSteps().forEach((s, i) =>
+        list.push({ station: state.results.first + i, type: 'new', name: '', lat: s.lat, lon: s.lon }));
+      const byId = new Map(zones.map(z => [z.id, z]));
+      list.forEach(s => {
+        let z = null;
+        if (zoneKind() === 'ease36') {
+          const c = EASE_GRID.cellOf(s.lon, s.lat);
+          z = c ? byId.get(`${c.row}-${c.col}`) || null : null;
+        } else {
+          z = zones.find(q => s.lon >= q.bbox[0] && s.lon <= q.bbox[2] && s.lat >= q.bbox[1] && s.lat <= q.bbox[3] &&
+            pointInLonLat(s.lon, s.lat, q.mp)) || null;
+        }
+        s.zone = z;
+      });
+      return list;
+    }
+
+    function zoneCounts(list, type) {
+      const m = new Map();
+      list.forEach(s => { if (s.zone && (!type || s.type === type)) m.set(s.zone.id, (m.get(s.zone.id) || 0) + 1); });
+      return m;
+    }
+
+    function drawZones() {
+      markProgress();
+      layers.zones.clearLayers();
+      const kind = zoneKind();
+      el('zonePanel').hidden = !kind;
+      el('zoneCard').hidden = !kind;
+      if (kind) el('zoneTitle').textContent = `Stations per ${ZONE_KINDS[kind].unit}: ${kind === 'file' && zoneFile ? zoneFile.name : ZONE_KINDS[kind].label}`;
+      document.querySelectorAll('.zone-legend').forEach(e => { e.hidden = !kind; });
+      if (!kind) return;
+      el('zoneNote').innerHTML = `${ZONE_KINDS[kind].note} Overlays only count stations; they do not change where new stations go.`;
+      document.querySelectorAll('.zUnit').forEach(e => { e.textContent = ZONE_KINDS[kind].plural; });
+      if (!state.boundary) { el('zoneInfo').textContent = 'Choose, upload, or draw a region first (step 1).'; return; }
+
+      const zones = regionZones();
+      if (zones === 'loading') {
+        el('zoneInfo').textContent = 'Loading US counties...';
+        loadScript('data/us_counties.js').then(drawZones).catch(err => { el('zoneInfo').textContent = err.message; });
+        return;
+      }
+      if (!zones) { el('zoneInfo').textContent = 'Upload a boundaries file (GeoJSON).'; return; }
+
+      const list = stationsWithZones(zones);
+      const all = zoneCounts(list), existing = zoneCounts(list, 'existing');
+      const tally = counts => {
+        let occ = 0, multi = 0;
+        zones.forEach(z => { const n = counts.get(z.id) || 0; if (n) occ++; if (n > 1) multi++; });
+        return { occ, multi };
+      };
+      const a = tally(existing), b = tally(all);
+      // count and share of the areas in the region, e.g. "52 (49.5%)"
+      const cnt = v => (zones.length ? `${fmt(v)} (${fmt((100 * v) / zones.length, 1)}%)` : '-');
+      const hasNew = !!state.results;
+      el('zoneInfo').innerHTML = `${ZONE_KINDS[kind].plural} in the region: <b>${fmt(zones.length)}</b>`;
+      el('zOcc0').textContent = cnt(a.occ); el('zOcc1').textContent = hasNew ? cnt(b.occ) : '-';
+      el('zMulti0').textContent = cnt(a.multi); el('zMulti1').textContent = hasNew ? cnt(b.multi) : '-';
+
+      if (zones.length > MAX_ZONES_DRAWN) {
+        el('zoneInfo').innerHTML += ' (too many to draw; statistics only)';
+        return;
+      }
+      zones.forEach(z => {
+        const n = all.get(z.id) || 0;
+        const style = n === 0 ? { color: COLORS.white, weight: 0.5, opacity: 0.3, fill: false }
+          : { color: n > 1 ? COLORS.amber : COLORS.lime, weight: 0.8, opacity: 0.7, fillColor: n > 1 ? COLORS.amber : COLORS.lime, fillOpacity: n > 1 ? 0.35 : 0.2 };
+        const opts = { ...style, renderer: zoneRenderer, pmIgnore: true };
+        const shape = z.bounds ? L.rectangle(z.bounds, opts)
+          : L.polygon(z.mp.map(poly => poly.map(ring => ring.map(([lon, lat]) => [lat, lon]))), opts);
+        shape.bindTooltip(`${z.name}<br>${n} station${n === 1 ? '' : 's'}`, { sticky: true }).addTo(layers.zones);
+      });
+    }
+
+    /** Share of an EASE cell inside the region (computed for downloads only). */
+    function cellFraction(z) {
+      const [[s, w], [n, e]] = z.bounds;
+      const ring = [];
+      for (let i = 0; i < 8; i++) ring.push([w + ((e - w) * i) / 8, s]);
+      for (let i = 0; i < 8; i++) ring.push([e, s + ((n - s) * i) / 8]);
+      for (let i = 0; i < 8; i++) ring.push([e - ((e - w) * i) / 8, n]);
+      for (let i = 0; i < 8; i++) ring.push([w, n - ((n - s) * i) / 8]);
+      ring.push(ring[0]);
+      const xy = ring.map(([lon, lat]) => state.dom.proj.fwd(lon, lat));
+      const full = LEA.areaCentroid([[xy]]).area;
+      return Math.min(1, LEA.areaCentroid(polygonClipping.intersection(state.dom.mp, [xy])).area / full);
+    }
+
+    /** One record per area in the region, with station counts. */
+    function zoneTable() {
+      const zones = regionZones();
+      if (!Array.isArray(zones)) return [];
+      const list = stationsWithZones(zones);
+      const ex = zoneCounts(list, 'existing'), nw = zoneCounts(list, 'new');
+      return zones.map(z => ({ z, existing: ex.get(z.id) || 0, added: nw.get(z.id) || 0,
+        fraction: z.bounds ? cellFraction(z) : z.fraction }));
+    }
+
+    let supportTimer = null;
+    function updateSupport(k) {
+      clearTimeout(supportTimer);
+      supportTimer = setTimeout(() => {
+        const res = state.results;
+        if (!res) return;
+        if (!res.support0) {
+          const a = LEA.supportAreas(res.base, state.dom).filter(v => v > 0);
+          res.support0 = { max: a.length ? Math.max(...a) : NaN, gini: a.length > 1 ? LEA.gini(a) : NaN };
+        }
+        const a1 = LEA.supportAreas(networkXY(k), state.dom).filter(v => v > 0);
+        el('stLsa0').textContent = fmt(res.support0.max);
+        el('stGini0').textContent = fmt(res.support0.gini, 2);
+        el('stLsa1').textContent = a1.length ? fmt(Math.max(...a1)) : '-';
+        el('stGini1').textContent = a1.length > 1 ? fmt(LEA.gini(a1), 2) : '-';
+      }, 80);
+    }
+
+    function updateStats(k, gap) {
+      updateSupport(k);
+      const res = state.results;
+      const r = footprintKm();
+      const before = LEA.networkStats(res.base, state.dom, r);
+      const after = LEA.networkStats(networkXY(k), state.dom, r);
+      el('stN0').textContent = res.base.length;
+      el('stN1').textContent = res.base.length + k;
+      el('stLea0').textContent = fmt(res.steps[0].area);
+      el('stLea1').textContent = gap ? fmt(gap.area) : '-';
+      el('stMean0').textContent = before ? fmt(before.meanDist, 1) : '-';
+      el('stMean1').textContent = after ? fmt(after.meanDist, 1) : '-';
+      el('stMed0').textContent = before ? fmt(before.medianDist, 1) : '-';
+      el('stMed1').textContent = after ? fmt(after.medianDist, 1) : '-';
+      el('stMax0').textContent = before ? fmt(before.maxDist, 1) : '-';
+      el('stMax1').textContent = after ? fmt(after.maxDist, 1) : '-';
+      el('covRow').hidden = !(r > 0);
+      el('covLabel').textContent = `Area within ${r} km of a station`;
+      el('stCov0').textContent = before ? `${fmt(before.coveredPct, 1)}%` : '-';
+      el('stCov1').textContent = after ? `${fmt(after.coveredPct, 1)}%` : '-';
+    }
+
+    // ------------------------------------------------------------------------
+    // Downloads
+    // ------------------------------------------------------------------------
+    function download(text, name, type) {
+      const url = URL.createObjectURL(new Blob([text], { type }));
+      const a = document.createElement('a');
+      a.href = url; a.download = name; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function shownSteps() { return state.results ? state.results.steps.slice(0, shownK()) : []; }
+
+    el('dlCsvBtn').onclick = () => {
+      const first = state.results.first;
+      const rows = shownSteps().map((s, i) =>
+        [first + i, i + 1, s.lat.toFixed(5), s.lon.toFixed(5), s.area.toFixed(1), s.r.toFixed(2)].join(','));
+      download(['station,build_order,lat,lon,empty_area_km2,empty_circle_radius_km', ...rows].join('\n'), 'new_stations.csv', 'text/csv');
+    };
+
+    const csvQ = v => `"${String(v).replace(/"/g, '""')}"`;
+
+    el('dlStationZonesBtn').onclick = () => {
+      const zones = regionZones();
+      if (!Array.isArray(zones)) return;
+      const list = stationsWithZones(zones);
+      const counts = zoneCounts(list);
+      const rows = list.map(s => [s.station, s.type, csvQ(s.name), s.lat.toFixed(5), s.lon.toFixed(5),
+        s.zone ? csvQ(s.zone.id) : '', s.zone ? csvQ(s.zone.name) : '', s.zone ? counts.get(s.zone.id) : ''].join(','));
+      download(['station,type,name,lat,lon,area_id,area_name,stations_in_area', ...rows].join('\n'),
+        `stations_by_${zoneKind()}.csv`, 'text/csv');
+    };
+
+    el('dlZonesCsvBtn').onclick = () => {
+      const rows = zoneTable().map(t => [csvQ(t.z.id), csvQ(t.z.name), t.existing, t.added, t.existing + t.added,
+        t.fraction.toFixed(3)].join(','));
+      download(['area_id,area_name,existing_stations,new_stations,total_stations,fraction_in_region', ...rows].join('\n'),
+        `stations_per_${zoneKind()}.csv`, 'text/csv');
+    };
+
+    el('dlZonesGeoBtn').onclick = () => {
+      const fc = {
+        type: 'FeatureCollection',
+        features: zoneTable().map(t => {
+          let geometry;
+          if (t.z.bounds) {
+            const [[s, w], [n, e]] = t.z.bounds.map(p => p.map(v => +v.toFixed(6)));
+            geometry = { type: 'Polygon', coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] };
+          } else {
+            geometry = { type: 'MultiPolygon', coordinates: t.z.mp };
+          }
+          return {
+            type: 'Feature',
+            properties: { area_id: t.z.id, area_name: t.z.name, existing_stations: t.existing, new_stations: t.added,
+              total_stations: t.existing + t.added, fraction_in_region: +t.fraction.toFixed(3) },
+            geometry
+          };
+        })
+      };
+      download(JSON.stringify(fc), `stations_per_${zoneKind()}.geojson`, 'application/geo+json');
+    };
+
+    el('dlGeoBtn').onclick = () => {
+      const first = state.results.first;
+      const fc = {
+        type: 'FeatureCollection',
+        features: shownSteps().map((s, i) => ({
+          type: 'Feature',
+          properties: { station: first + i, build_order: i + 1, empty_area_km2: +s.area.toFixed(1), empty_circle_radius_km: +s.r.toFixed(2) },
+          geometry: { type: 'Point', coordinates: [+s.lon.toFixed(6), +s.lat.toFixed(6)] }
+        }))
+      };
+      download(JSON.stringify(fc, null, 2), 'new_stations.geojson', 'application/geo+json');
+    };
+
+    // ------------------------------------------------------------------------
+    // Wiring
+    // ------------------------------------------------------------------------
+    const readText = file => new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = e => resolve(e.target.result);
+      r.onerror = reject;
+      r.readAsText(file);
+    });
+
+    el('boundaryFile').onchange = async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const feats = polygonFeatures(JSON.parse(await readText(file)));
+        if (!feats.length) throw new Error('The file has no Polygon or MultiPolygon features.');
+        if (feats.length === 1) {
+          setBoundary(feats[0]);
+          notify(`Loaded boundary from ${file.name}.`);
+        } else {
+          setFileSource(file.name, feats);
+          notify(`${file.name} has ${feats.length} features: choose one (or all) in the Region list.`);
+          el('regionSelect').focus();
+        }
+      } catch (err) { alert(`Could not read the boundary: ${err.message}`); }
+      e.target.value = '';
+    };
+
+    // ------------------------------------------------------------------------
+    // Region picker: built-in US states and countries, plus features of a loaded file
+    // ------------------------------------------------------------------------
+    const SOURCES = [
+      { key: 'us', label: 'US states, DC and Puerto Rico', features: (window.US_STATES || {}).features || [] },
+      { key: 'world', label: 'Countries', features: (window.COUNTRIES || {}).features || [] }
+    ];
+    let fileSource = null;   // { key: 'file', label, features }
+
+    function polygonFeatures(obj) {
+      const feats = obj.type === 'FeatureCollection' ? obj.features : obj.type === 'Feature' ? [obj] : [{ type: 'Feature', properties: {}, geometry: obj }];
+      return feats.filter(f => f.geometry && ['Polygon', 'MultiPolygon'].includes(f.geometry.type));
+    }
+
+    function featureName(f, i) {
+      const p = f.properties || {};
+      for (const k of ['name', 'NAME', 'Name', 'NAMELSAD', 'State_Name', 'STATE_NAME', 'ADMIN', 'county', 'COUNTY'])
+        if (p[k]) return String(p[k]);
+      return `Feature ${i + 1}`;
+    }
+
+    function buildRegionSelect() {
+      const sel = el('regionSelect');
+      sel.innerHTML = '<option value="">Choose...</option>';
+      const groups = fileSource ? [fileSource, ...SOURCES] : SOURCES;
+      groups.forEach(src => {
+        if (!src.features.length) return;
+        const g = document.createElement('optgroup');
+        g.label = src.key === 'file' ? `From ${src.label}` : src.label;
+        if (src.key === 'file') g.appendChild(new Option('All features (merged)', 'file:all'));
+        src.features.map((f, i) => ({ i, name: featureName(f, i) }))
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .forEach(o => g.appendChild(new Option(o.name, `${src.key}:${o.i}`)));
+        sel.appendChild(g);
+      });
+    }
+
+    function setFileSource(label, features) {
+      fileSource = { key: 'file', label, features };
+      buildRegionSelect();
+    }
+
+    el('regionSelect').onchange = () => {
+      const v = el('regionSelect').value;
+      if (!v) return;
+      const [key, idx] = v.split(':');
+      const src = key === 'file' ? fileSource : SOURCES.find(x => x.key === key);
+      const geo = idx === 'all' ? { type: 'FeatureCollection', features: src.features } : src.features[Number(idx)];
+      try {
+        setBoundary(geo);
+        notify(`Region: ${idx === 'all' ? `all features in ${src.label}` : featureName(geo, Number(idx))}.`);
+      } catch (err) { alert(`Could not use this region: ${err.message}`); }
+    };
+
+    buildRegionSelect();
+
+    el('stationsFile').onchange = async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const text = await readText(file);
+        const list = /\.csv$|\.txt$/i.test(file.name) ? stationsFromCSV(text) : stationsFromGeoJSON(JSON.parse(text));
+        if (!list.length) throw new Error('No station coordinates found.');
+        list.forEach(s => addStation(s.lat, s.lon, s.name));
+        refreshStations(); invalidate();
+        if (!state.boundary) map.fitBounds(layers.stations.getBounds(), { padding: [30, 30] });
+        notify(`Loaded ${list.length} stations from ${file.name}.`);
+      } catch (err) { alert(`Could not read the stations: ${err.message}`); }
+      e.target.value = '';
+    };
+
+    function stationSignature() { return state.stations.map(st => `${st.lat.toFixed(5)},${st.lon.toFixed(5)}`).join(';'); }
+
+    function loadKansas(stations, label, nNew) {
+      setMode(null);
+      layers.stations.clearLayers();
+      state.stations = [];
+      stations.forEach(([name, lat, lon]) => addStation(lat, lon, name));
+      setBoundary(KANSAS_EXAMPLE.boundary);
+      const ks = SOURCES[0].features.findIndex(f => f.properties.name === 'Kansas');
+      el('regionSelect').value = ks >= 0 ? `us:${ks}` : '';
+      if (nNew) el('nNew').value = nNew;
+      state.example = { boundary: state.boundary, sig: stationSignature() };
+      notify(`Loaded ${label}: ${stations.length} stations.`);
+    }
+    // Example: the 2016 Kansas Mesonet analyzed in Patrignani et al. (2020)
+    el('exampleBtn').onclick = () => {
+      loadKansas(KANSAS_EXAMPLE.stations2016, 'the Kansas Mesonet in 2016 (Patrignani et al., 2020)', 1);
+      showTab('run');
+    };
+
+    el('includeOutside').onchange = invalidate;
+
+    el('runBtn').onclick = () => run().catch(err => {
+      console.error(err);
+      el('runBtn').disabled = false; el('cancelBtn').disabled = true; state.run = null;
+      setStatus(`Error: ${err.message}`);
+    });
+    el('cancelBtn').onclick = () => { if (state.run) state.run.cancel = true; };
+
+    el('showK').oninput = render;
+    el('showGap').onchange = render;
+    el('showVoronoi').onchange = drawVoronoi;
+    el('showLargest').onchange = drawVoronoi;
+    let lastZoneKind = '';
+    el('zoneSelect').onchange = () => {
+      if (zoneKind() === 'file' && !zoneFile) { el('zonesFile').click(); return; }
+      lastZoneKind = zoneKind();
+      state.zones = null;
+      drawZones();
+    };
+    el('zonesFile').onchange = async e => {
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file) { el('zoneSelect').value = lastZoneKind; return; }
+      try {
+        const feats = polygonFeatures(JSON.parse(await readText(file)));
+        if (!feats.length) throw new Error('The file has no Polygon or MultiPolygon features.');
+        zoneFile = { name: file.name, features: feats };
+        el('zoneSelect').querySelector('option[value="file"]').textContent = `Boundaries from ${file.name}`;
+        el('zoneSelect').value = 'file';
+        lastZoneKind = 'file';
+        state.zones = null;
+        drawZones();
+        notify(`Loaded ${feats.length} areas from ${file.name}.`);
+      } catch (err) {
+        alert(`Could not read the boundaries: ${err.message}`);
+        el('zoneSelect').value = lastZoneKind;
+      }
+    };
+    // any file chooser dialog closed without a file: restore the previous choice
+    window.addEventListener('focus', () => setTimeout(() => {
+      if (zoneKind() === 'file' && !zoneFile) el('zoneSelect').value = lastZoneKind;
+    }, 500));
+
+    // ---- activity bar: one sidebar panel at a time; clicking the active icon folds the panel away
+    function showTab(name) {
+      const layout = document.querySelector('.layout');
+      const current = document.querySelector('.activity button.active');
+      const fold = current && current.dataset.tab === name && !layout.classList.contains('collapsed');
+      layout.classList.toggle('collapsed', fold);
+      document.querySelectorAll('.activity button[data-tab]').forEach(b => b.classList.toggle('active', !fold && b.dataset.tab === name));
+      document.querySelectorAll('.panel .tab').forEach(t => { t.hidden = t.dataset.tab !== name; });
+      setTimeout(() => map.invalidateSize(), 0);
+    }
+    function markProgress() {
+      const done = { region: !!state.boundary, stations: state.stations.length > 0, run: !!state.results, areas: !!zoneKind() };
+      document.querySelectorAll('.activity button[data-tab]').forEach(b => b.classList.toggle('done', !!done[b.dataset.tab]));
+    }
+    document.querySelectorAll('.activity button[data-tab]').forEach(b => { b.onclick = () => showTab(b.dataset.tab); });
+    showTab('region');
+
+    el('aboutBtn').onclick = () => el('aboutDialog').showModal();
+    el('aboutClose').onclick = () => el('aboutDialog').close();
+    el('aboutDialog').addEventListener('click', e => { if (e.target === el('aboutDialog')) el('aboutDialog').close(); });
+
+    el('boundaryUploadBtn').onclick = () => el('boundaryFile').click();
+    el('clearBoundaryBtn').onclick = clearBoundary;
+    el('stationsUploadBtn').onclick = () => el('stationsFile').click();
+    el('addStationsBtn').onclick = toggleAdd;
+    el('clearStationsBtn').onclick = clearStations;
+    el('footprintKm').oninput = () => (state.results ? render() : drawFootprints());
+
+    el('resultsBody').onclick = e => {
+      const tr = e.target.closest('tr');
+      if (!tr) return;
+      const i = Number(tr.dataset.i);
+      if (i >= shownK()) { el('showK').value = i + 1; render(); }
+      const m = state.proposedMarkers[i];
+      map.panTo(m.getLatLng());
+      m.openPopup();
+    };
+  </script>
+</body>
+</html>

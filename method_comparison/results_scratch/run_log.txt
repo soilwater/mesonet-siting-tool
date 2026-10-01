@@ -1,0 +1,140 @@
+  Kansas Largest Empty Area     placed 40
+  Kansas Buffer r=25 km         placed 40
+  Kansas Buffer r=50 km         placed 40
+  trial 0/150  Kansas-like  area   164695  (1s)
+  trial 15/150  Patagonia    area   160246  (13s)
+  trial 30/150  Kansas-like  area   214566  (26s)
+  trial 45/150  Patagonia    area    89954  (38s)
+  trial 60/150  Kansas-like  area   123759  (52s)
+  trial 75/150  Patagonia    area    51366  (66s)
+  trial 90/150  Kansas-like  area   114204  (79s)
+  trial 105/150  Patagonia    area   142003  (93s)
+  trial 120/150  Kansas-like  area    85470  (106s)
+  trial 135/150  Patagonia    area   131118  (120s)
+{
+ "n_trials": 150,
+ "N=5": {
+  "LEA": {
+   "no_answer_%": 0.0,
+   "max_d_median_%_above_CVT": 45.0,
+   "mean_d_median_%_above_CVT": 17.6,
+   "ksd25_median_%_above_CVT": 0.0,
+   "ksd100_median_%_above_CVT": 2.5
+  },
+  "BUF25": {
+   "no_answer_%": 0.0,
+   "max_d_median_%_above_CVT": 74.2,
+   "mean_d_median_%_above_CVT": 83.7,
+   "ksd25_median_%_above_CVT": 0.7,
+   "ksd100_median_%_above_CVT": 13.7,
+   "max_d_LEA_better_%": 99.3,
+   "max_d_BUF_better_%": 0.7,
+   "mean_d_LEA_better_%": 100.0,
+   "mean_d_BUF_better_%": 0.0
+  },
+  "BUF50": {
+   "no_answer_%": 0.0,
+   "max_d_median_%_above_CVT": 58.1,
+   "mean_d_median_%_above_CVT": 51.9,
+   "ksd25_median_%_above_CVT": 0.2,
+   "ksd100_median_%_above_CVT": 8.0,
+   "max_d_LEA_better_%": 78.7,
+   "max_d_BUF_better_%": 18.0,
+   "mean_d_LEA_better_%": 95.3,
+   "mean_d_BUF_better_%": 4.7
+  }
+ },
+ "N=10": {
+  "LEA": {
+   "no_answer_%": 0.0,
+   "max_d_median_%_above_CVT": 48.5,
+   "mean_d_median_%_above_CVT": 13.2,
+   "ksd25_median_%_above_CVT": 0.0,
+   "ksd100_median_%_above_CVT": 2.9
+  },
+  "BUF25": {
+   "no_answer_%": 0.0,
+   "max_d_median_%_above_CVT": 132.4,
+   "mean_d_median_%_above_CVT": 129.7,
+   "ksd25_median_%_above_CVT": 1.7,
+   "ksd100_median_%_above_CVT": 23.9,
+   "max_d_LEA_better_%": 100.0,
+   "max_d_BUF_better_%": 0.0,
+   "mean_d_LEA_better_%": 100.0,
+   "mean_d_BUF_better_%": 0.0
+  },
+  "BUF50": {
+   "no_answer_%": 0.7,
+   "max_d_median_%_above_CVT": 100.5,
+   "mean_d_median_%_above_CVT": 68.4,
+   "ksd25_median_%_above_CVT": 0.4,
+   "ksd100_median_%_above_CVT": 13.3,
+   "max_d_LEA_better_%": 92.6,
+   "max_d_BUF_better_%": 7.4,
+   "mean_d_LEA_better_%": 93.3,
+   "mean_d_BUF_better_%": 5.4
+  }
+ },
+ "N=20": {
+  "LEA": {
+   "no_answer_%": 0.0,
+   "max_d_median_%_above_CVT": 46.7,
+   "mean_d_median_%_above_CVT": 12.1,
+   "ksd25_median_%_above_CVT": 0.1,
+   "ksd100_median_%_above_CVT": 3.8
+  },
+  "BUF25": {
+   "no_answer_%": 0.0,
+   "max_d_median_%_above_CVT": 204.2,
+   "mean_d_median_%_above_CVT": 169.7,
+   "ksd25_median_%_above_CVT": 3.6,
+   "ksd100_median_%_above_CVT": 32.8,
+   "max_d_LEA_better_%": 100.0,
+   "max_d_BUF_better_%": 0.0,
+   "mean_d_LEA_better_%": 100.0,
+   "mean_d_BUF_better_%": 0.0
+  },
+  "BUF50": {
+   "no_answer_%": 12.7,
+   "max_d_median_%_above_CVT": 129.4,
+   "mean_d_median_%_above_CVT": 60.4,
+   "ksd25_median_%_above_CVT": 0.6,
+   "ksd100_median_%_above_CVT": 14.3,
+   "max_d_LEA_better_%": 80.2,
+   "max_d_BUF_better_%": 19.8,
+   "mean_d_LEA_better_%": 79.4,
+   "mean_d_BUF_better_%": 19.1
+  }
+ },
+ "N=30": {
+  "LEA": {
+   "no_answer_%": 0.0,
+   "max_d_median_%_above_CVT": 48.5,
+   "mean_d_median_%_above_CVT": 6.6,
+   "ksd25_median_%_above_CVT": 0.2,
+   "ksd100_median_%_above_CVT": 2.5
+  },
+  "BUF25": {
+   "no_answer_%": 0.0,
+   "max_d_median_%_above_CVT": 246.1,
+   "mean_d_median_%_above_CVT": 175.9,
+   "ksd25_median_%_above_CVT": 5.0,
+   "ksd100_median_%_above_CVT": 37.7,
+   "max_d_LEA_better_%": 99.3,
+   "max_d_BUF_better_%": 0.7,
+   "mean_d_LEA_better_%": 100.0,
+   "mean_d_BUF_better_%": 0.0
+  },
+  "BUF50": {
+   "no_answer_%": 32.7,
+   "max_d_median_%_above_CVT": 136.8,
+   "mean_d_median_%_above_CVT": 49.6,
+   "ksd25_median_%_above_CVT": 0.7,
+   "ksd100_median_%_above_CVT": 12.6,
+   "max_d_LEA_better_%": 84.2,
+   "max_d_BUF_better_%": 15.8,
+   "mean_d_LEA_better_%": 96.0,
+   "mean_d_BUF_better_%": 1.0
+  }
+ }
+}
