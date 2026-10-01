@@ -16,3 +16,9 @@ __pycache__/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Build-only data (the app loads the data/*.js files)
+data/build_data.py
+data/gz_2010_us_*.json
+data/us_states.geojson
+data/us_counties.geojson
