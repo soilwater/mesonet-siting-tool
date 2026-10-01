@@ -1,5 +1,7 @@
 # Mesonet Siting Tool
 
+**Open the app: https://soilwater.github.io/mesonet-siting-tool/**
+
 Find where your next monitoring stations should go. Each new station goes in the largest empty area left by the
 stations you already have, following the Largest Empty Area method of Patrignani et al. (2020).
 
