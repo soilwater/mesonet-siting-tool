@@ -38,7 +38,7 @@ and open http://localhost:8765.
 | `index.html` | The app |
 | `lea.js` | Largest Empty Area method, support areas and Gini coefficient |
 | `ease.js` | EASE-Grid 2.0 global 36-km grid (EPSG:6933) |
-| `data/` | US states and counties, world countries, and the Kansas example, built by `data/build_data.py` |
+| `data/` | US states and counties, world countries, and the Kansas example, loaded by the app |
 | `method_comparison/` | Comparison of the Largest Empty Area method with fixed-radius station buffers |
 
 ## References
