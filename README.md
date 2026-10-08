@@ -2,8 +2,9 @@
 
 **Open the app: https://soilwater.github.io/mesonet-siting-tool/**
 
-Find where your next monitoring stations should go. Each new station goes in the largest empty area left by the
-stations you already have, following the Largest Empty Area method of Patrignani et al. (2020).
+Find where your next monitoring stations should go. Each new station goes at the most remote spot in the region,
+the center of the largest empty area left by the stations you already have, following the Largest Empty Area
+method of Patrignani et al. (2020).
 
 It works for any region on Earth: a US state, a country, an uploaded GeoJSON, or a region drawn on the map.
 
