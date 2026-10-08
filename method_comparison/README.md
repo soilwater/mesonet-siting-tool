@@ -7,7 +7,7 @@ This compares two ways to choose where new stations go. Both place one station a
   - Each circle's radius is the distance to the nearest station.
   - Circles are clipped to the boundary and ranked by clipped area.
   - The new station goes at the centroid of the largest clipped circle.
-- **Buffer** (what `index.html` does now): buffer each station by r km, remove the buffers from the boundary, and place the new station at the centroid of the largest uncovered piece. Tested at r = 25 and 50 km.
+- **Buffer** (the simpler alternative): buffer each station by r km, remove the buffers from the boundary, and place the new station at the centroid of the largest uncovered piece. Tested at r = 25 and 50 km.
 
 All distances and areas are computed in a local equal-area projection centred on the boundary, so the code works anywhere in the world.
 
