@@ -11,7 +11,7 @@ It works for any region on Earth: a US state, a country, an uploaded GeoJSON, or
 
 1. **Region:** pick a US state or country, upload a GeoJSON, or draw the region.
 2. **Existing stations:** upload a CSV (`lat`, `lon`, optional name) or GeoJSON, or click to add stations. You can also start with no stations.
-3. **New stations:** get the location and build order of 1 to 250 new stations.
+3. **New stations:** get the location and siting order of 1 to 250 new stations.
 4. **Overlays (optional):** show the 36-km EASE-Grid 2.0, US counties, or your own boundaries, and count the stations in each cell or area.
 
 The results include the largest empty area, the median, mean and longest distance to a station, the largest area

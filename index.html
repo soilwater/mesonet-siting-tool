@@ -187,6 +187,28 @@
       box-shadow: 0 0 12px rgba(34, 228, 255, .3);
     }
     #mapHint[hidden] { display: none; }
+    .map-wrap { position: relative; }
+
+    /* ---- on-map guidance: first-visit card and next-step bar ---- */
+    .welcome {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1001;
+      width: min(400px, calc(100% - 32px)); padding: 20px 22px;
+      background: rgba(15, 20, 29, .97); border: 1px solid var(--cyan); border-radius: 12px;
+      box-shadow: 0 0 24px rgba(34, 228, 255, .3);
+    }
+    .welcome h2 { margin-bottom: 8px; }
+    .welcome ol { padding-left: 20px; margin: 8px 0 14px; }
+    .welcome li { line-height: 1.6; }
+    .welcome li b { color: var(--cyan); }
+    .welcome .btns { margin: 0; }
+    .next-bar {
+      position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 1000;
+      display: flex; align-items: center; gap: 12px; width: max-content; max-width: calc(100% - 32px);
+      padding: 8px 8px 8px 16px; border-radius: 10px;
+      background: rgba(7, 10, 16, .94); border: 1px solid var(--cyan);
+      box-shadow: 0 0 14px rgba(34, 228, 255, .35);
+    }
+    .next-bar button { width: auto; padding: 8px 18px; white-space: nowrap; }
     .out-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 20px; align-items: start; }
     .out-grid .stats { margin-top: 0; }
     .card .table-wrap { max-height: 330px; }
@@ -205,7 +227,7 @@
       position: sticky; top: 0; float: right; width: 32px; height: 32px; padding: 0;
       display: grid; place-items: center; font-size: 18px; line-height: 1;
     }
-    #map { width: 100%; height: 780px; border-radius: 8px; overflow: hidden; background: #0b0f16; }
+    #map { width: 100%; height: min(780px, max(480px, calc(100vh - 90px))); border-radius: 8px; overflow: hidden; background: #0b0f16; }
     #map.adding { cursor: crosshair; }
 
     .legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 8px 4px 2px; }
@@ -260,14 +282,33 @@
     .leaflet-control-attribution a { color: var(--muted); }
 
     /* ---- map markers ---- */
+    /* zero-size Leaflet icon; the label is centered on the point and grows into a pill for 3-digit numbers */
+    .mk { overflow: visible; }
+    /* fixed whole-pixel sizes and offsets keep circles round and numbers centered */
     .st-icon, .pr-icon {
-      width: 20px; height: 20px; border-radius: 50%;
-      font: 700 10px/16px "Inter", "Segoe UI", Arial, sans-serif; text-align: center;
+      position: absolute; left: -11px; top: -11px; width: 22px; height: 22px; border-radius: 50%;
+      text-align: center;
+      font: 700 11px/17px "Inter", "Segoe UI", Arial, sans-serif;   /* 17px line puts the digits' ink at the optical center */
+      font-variant-numeric: tabular-nums; letter-spacing: -0.3px; white-space: nowrap;
+      transition: transform .12s;
     }
-    .st-icon { background: var(--existing); color: #05070b; border: 2px solid #05070b; }
-    .st-icon.out { background: #6b7585; }
-    .pr-icon { background: var(--cyan); color: #04151a; border: 2px solid #04151a; box-shadow: 0 0 8px rgba(34, 228, 255, .8); }
+    .st-icon.wide, .pr-icon.wide { left: -15px; width: 30px; border-radius: 11px; }   /* 3-digit numbers */
+    .mk:hover .st-icon, .mk:hover .pr-icon { transform: scale(1.3); }
+    .st-icon {
+      background: radial-gradient(circle at 35% 30%, #ffffff 0%, #ffffff 45%, #d3d9e2 100%);
+      color: #05070b; border: 2px solid #05070b;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, .35), 0 2px 4px rgba(0, 0, 0, .6);
+    }
+    .st-icon.out { background: radial-gradient(circle at 35% 30%, #8a94a3 0%, #6b7585 60%, #555e6c 100%); }
+    .pr-icon {
+      background: var(--cyan); color: #04151a; line-height: 21px;   /* no border: 2px more room */
+      box-shadow: 0 0 10px rgba(34, 228, 255, .75);
+    }
+    .pr-icon.last { box-shadow: 0 0 0 2px #04151a, 0 0 0 4px var(--pink), 0 0 14px rgba(255, 79, 216, .9); }
 
+    @media (max-width: 1200px) {
+      .out-grid { grid-template-columns: 1fr; }
+    }
     @media (max-width: 980px) {
       .layout, .layout.collapsed { grid-template-columns: 1fr; }
       .activity { flex-direction: row; flex-wrap: wrap; position: static; }
@@ -316,7 +357,7 @@
             Find the best places for new monitoring stations.
           </p>
           <div class="head-links">
-            <button class="link" id="exampleBtn">Load example</button>
+            <button class="link" id="exampleBtn" title="Starts over with the 2016 Kansas Mesonet">Load example</button>
           </div>
         </div>
 
@@ -394,10 +435,27 @@
 
       <div class="map-col">
         <div class="map-panel">
-          <div id="map"></div>
+          <div class="map-wrap">
+            <div id="map"></div>
+            <div class="welcome" id="welcome" role="dialog" aria-labelledby="welcomeTitle">
+              <h2 id="welcomeTitle">Example</h2>
+              <ol>
+                <li><b>Load example</b>: the Kansas Mesonet in 2016 (56 stations)</li>
+                <li><b>Run</b>: find the site for the next station</li>
+              </ol>
+              <div class="btns">
+                <button class="primary" id="welcomeExampleBtn">Load example</button>
+                <button id="welcomeOwnBtn">Use my own data</button>
+              </div>
+            </div>
+            <div class="next-bar" id="nextBar" hidden>
+              <span id="nextText"></span>
+              <button class="primary" id="nextBtn"></button>
+            </div>
+          </div>
           <div class="legend">
-            <span><i class="sw" style="background:var(--existing)"></i>Existing station</span>
-            <span><i class="sw" style="background:var(--cyan);box-shadow:0 0 6px var(--cyan)"></i>New station (build order)</span>
+            <span><i class="sw" style="background:var(--existing);border:2px solid #05070b;box-shadow:0 0 0 1px rgba(255,255,255,.35)"></i>Existing station</span>
+            <span><i class="sw" style="background:var(--cyan);box-shadow:0 0 6px var(--cyan)"></i>New station (siting order)</span>
             <span><i class="sw" style="border:3px solid var(--pink)"></i>Empty area filled by the last new station</span>
             <span><i class="sw" style="width:16px;height:11px;border-radius:2px;border:2px solid var(--lime)"></i>Boundary</span>
             <span class="largest-legend" hidden><i class="sw" style="width:16px;height:11px;border-radius:2px;background:rgba(167,139,250,.45);border:2px solid var(--violet)"></i>Largest area represented by one station</span>
@@ -493,7 +551,7 @@
               distance to the nearest station.</li>
             <li>Each circle is clipped to the boundary. The one with the most area inside the region is the
               largest empty area, and the new station goes at its centroid.</li>
-            <li>The new station is added to the network and the process repeats, giving a build order for
+            <li>The new station is added to the network and the process repeats, giving a siting order for
               as many stations as needed.</li>
           </ol>
           <p>
@@ -504,23 +562,12 @@
 
           <h3>Why not simple buffers?</h3>
           <p>
-            A common GIS approach draws a fixed buffer around each station and places the next one in the
-            largest uncovered area. In tests on 300 synthetic networks worldwide, the largest-empty-area
-            method left smaller gaps than 25-km buffers in 88% of cases when adding to an existing network,
-            and in 79–100% of cases when building one from scratch. Common pitfalls of the buffer approach:
+            A simpler alternative is to draw a fixed buffer around each station and place the next one in the
+            largest uncovered area. The result then depends on the chosen buffer radius, and when uncovered areas
+            merge into large or irregular shapes, their centroid may not fall in the actual gap. The
+            largest-empty-area method needs no radius; it uses only the station locations and the boundary.
+            Here, buffers are only drawn as each station's footprint.
           </p>
-          <ul>
-            <li><strong>Arbitrary radius.</strong> Change the buffer size and the recommended site can move by
-              several km.</li>
-            <li><strong>Merged gaps.</strong> With small buffers the uncovered area is one large connected shape,
-              and its centroid sits in the middle of the region, so new stations can cluster together instead of
-              filling the real gaps.</li>
-            <li><strong>Slivers.</strong> Uncovered areas are often long, thin strips along borders whose centroid lands
-              on the boundary or next to an existing station.</li>
-            <li><strong>Distortion.</strong> Buffers and centroids computed in degrees of latitude and longitude are
-              distorted away from the equator.</li>
-          </ul>
-          <p>Here, buffers are only drawn as each station's footprint.</p>
           </dialog>
 
   <input id="boundaryFile" type="file" accept=".geojson,.json" hidden />
@@ -586,8 +633,10 @@
       mode: null          // 'add' | 'edit' | 'draw-poly' | 'draw-rect' | null
     };
 
-    const stationIcon = (n, out) => L.divIcon({ className: '', html: `<div class="st-icon${out ? ' out' : ''}">${n}</div>`, iconSize: [20, 20], iconAnchor: [10, 10] });
-    const proposedIcon = n => L.divIcon({ className: '', html: `<div class="pr-icon">${n}</div>`, iconSize: [20, 20], iconAnchor: [10, 10] });
+    const numberIcon = html => L.divIcon({ className: 'mk', html, iconSize: [0, 0], iconAnchor: [0, 0], popupAnchor: [0, -10] });
+    const wide = n => (n >= 100 ? ' wide' : '');
+    const stationIcon = (n, out) => numberIcon(`<div class="st-icon${out ? ' out' : ''}${wide(n)}">${n}</div>`);
+    const proposedIcon = n => numberIcon(`<div class="pr-icon${wide(n)}">${n}</div>`);
 
     // ------------------------------------------------------------------------
     // Tool rail
@@ -885,7 +934,7 @@
     }
 
     async function run() {
-      if (!state.dom) { alert('Choose, upload, or draw a region first (step 1).'); return; }
+      if (!state.dom) { openTab('region'); notify('Choose, upload, or draw a region first.'); return; }
       const N = Math.round(Number(el('nNew').value));
       if (!(N >= 1 && N <= MAX_NEW)) { alert(`Choose between 1 and ${MAX_NEW} new stations.`); return; }
       setMode(null);
@@ -921,6 +970,7 @@
 
       // new stations continue the numbering of the existing ones
       state.results = { base, first: state.stations.length + 1, steps, final };
+      guideNext(['run', 'running'], 'results');
       buildResults();
       setStatus(run.cancel ? `Cancelled after ${steps.length} new station${steps.length > 1 ? 's' : ''}.` : '');
     }
@@ -947,7 +997,7 @@
 
       state.proposedMarkers = steps.map((s, i) =>
         L.marker([s.lat, s.lon], { icon: proposedIcon(first + i), pmIgnore: true, zIndexOffset: 1000 })
-          .bindPopup(`<strong>New station ${first + i}</strong> (build order ${i + 1})<br>${s.lat.toFixed(4)}, ${s.lon.toFixed(4)}<br>` +
+          .bindPopup(`<strong>New station ${first + i}</strong> (siting order ${i + 1})<br>${s.lat.toFixed(4)}, ${s.lon.toFixed(4)}<br>` +
             `Empty area filled: ${fmt(s.area)} km²<br>Circle radius: ${fmt(s.r, 1)} km`));
 
       el('resultsBody').innerHTML = steps.map((s, i) =>
@@ -980,6 +1030,9 @@
 
       layers.proposed.clearLayers();
       state.proposedMarkers.slice(0, k).forEach(m => layers.proposed.addLayer(m));
+      // ring the last new station shown in pink, like the empty area it fills
+      const lastIcon = k > 0 && el('showGap').checked && state.proposedMarkers[k - 1].getElement();
+      if (lastIcon) lastIcon.firstElementChild.classList.add('last');
       document.querySelectorAll('#resultsBody tr').forEach(tr => tr.classList.toggle('dim', Number(tr.dataset.i) >= k));
 
       // largest empty area left after k new stations (for the statistics)
@@ -1295,7 +1348,7 @@
       const first = state.results.first;
       const rows = shownSteps().map((s, i) =>
         [first + i, i + 1, s.lat.toFixed(5), s.lon.toFixed(5), s.area.toFixed(1), s.r.toFixed(2)].join(','));
-      download(['station,build_order,lat,lon,empty_area_km2,empty_circle_radius_km', ...rows].join('\n'), 'new_stations.csv', 'text/csv');
+      download(['station,siting_order,lat,lon,empty_area_km2,empty_circle_radius_km', ...rows].join('\n'), 'new_stations.csv', 'text/csv');
     };
 
     const csvQ = v => `"${String(v).replace(/"/g, '""')}"`;
@@ -1346,7 +1399,7 @@
         type: 'FeatureCollection',
         features: shownSteps().map((s, i) => ({
           type: 'Feature',
-          properties: { station: first + i, build_order: i + 1, empty_area_km2: +s.area.toFixed(1), empty_circle_radius_km: +s.r.toFixed(2) },
+          properties: { station: first + i, siting_order: i + 1, empty_area_km2: +s.area.toFixed(1), empty_circle_radius_km: +s.r.toFixed(2) },
           geometry: { type: 'Point', coordinates: [+s.lon.toFixed(6), +s.lat.toFixed(6)] }
         }))
       };
@@ -1466,10 +1519,13 @@
       state.example = { boundary: state.boundary, sig: stationSignature() };
       notify(`Loaded ${label}: ${stations.length} stations.`);
     }
-    // Example: the 2016 Kansas Mesonet analyzed in Patrignani et al. (2020)
+    // Example: the 2016 Kansas Mesonet analyzed in Patrignani et al. (2020).
+    // With anything already on the map, reload the page for a clean start; the #example flag loads it after.
     el('exampleBtn').onclick = () => {
+      if (state.boundary || state.stations.length) { location.hash = 'example'; location.reload(); return; }
       loadKansas(KANSAS_EXAMPLE.stations2016, 'the Kansas Mesonet in 2016 (Patrignani et al., 2020)', 1);
-      showTab('run');
+      openTab('run');
+      guideNext('welcome', 'run');
     };
 
     el('includeOutside').onchange = invalidate;
@@ -1530,6 +1586,41 @@
       const done = { region: !!state.boundary, stations: state.stations.length > 0, run: !!state.results, areas: !!zoneKind() };
       document.querySelectorAll('.activity button[data-tab]').forEach(b => b.classList.toggle('done', !!done[b.dataset.tab]));
     }
+
+    // ---- on-map guidance: one pass through fixed steps, each shown once.
+    // welcome card -> Run -> See results -> siting-order tip -> done (refresh the page to see it again)
+    const GUIDE = {
+      run: { text: 'Click Run to find the next station.', btn: 'Run ▶', next: 'running',
+        act: () => { openTab('run'); el('runBtn').click(); } },          // the run itself moves on to 'results'
+      results: { text: 'Done. The results are below the map.', btn: 'See results ↓', next: 'tip',
+        act: () => el('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' }) },
+      tip: { text: 'Raise the number of new stations and run again to get a siting order.', btn: 'Set number',
+        act: () => { openTab('run'); el('nNew').select(); } }
+    };
+    let guideStep = 'welcome';
+    // shown on the first visit only; later loads (including the example reload) skip it
+    let guideSeen = false;
+    try { guideSeen = localStorage.getItem('guideSeen') === '1'; localStorage.setItem('guideSeen', '1'); } catch (e) { }
+    function guideShow(step) {
+      guideStep = step;
+      el('welcome').hidden = step !== 'welcome';
+      el('nextBar').hidden = !GUIDE[step];
+      if (GUIDE[step]) { el('nextText').textContent = GUIDE[step].text; el('nextBtn').textContent = GUIDE[step].btn; }
+    }
+    function guideNext(from, to) { if ([].concat(from).includes(guideStep)) guideShow(to); }
+    el('nextBtn').onclick = () => {
+      const s = GUIDE[guideStep];
+      guideShow(s.next || null);
+      s.act();
+    };
+    function openTab(name) {
+      const b = document.querySelector(`.activity button[data-tab="${name}"]`);
+      if (!b.classList.contains('active')) showTab(name);
+    }
+    el('welcomeExampleBtn').onclick = () => el('exampleBtn').click();
+    el('welcomeOwnBtn').onclick = () => { guideShow(null); openTab('region'); };
+    if (guideSeen) guideShow(null);
+    el('nNew').addEventListener('keydown', e => { if (e.key === 'Enter' && !state.run) el('runBtn').click(); });
     document.querySelectorAll('.activity button[data-tab]').forEach(b => { b.onclick = () => showTab(b.dataset.tab); });
     showTab('region');
 
@@ -1553,6 +1644,12 @@
       map.panTo(m.getLatLng());
       m.openPopup();
     };
+
+    // "Load example" on a used map reloads the page with #example (see exampleBtn)
+    if (location.hash === '#example') {
+      history.replaceState(null, '', location.pathname + location.search);
+      el('exampleBtn').click();
+    }
   </script>
 </body>
 </html>
