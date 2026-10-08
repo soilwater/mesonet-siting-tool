@@ -53,7 +53,7 @@ LEA needs a starting rule because there are no Voronoi vertices yet:
 - **Second station:** candidate centres are the boundary vertices, with circles clipped and ranked the same way.
 - **From the third station on:** the published method, unchanged.
 
-Every network is scored against an **all-at-once layout** with the same number of stations. That layout is a centroidal Voronoi (k-means) layout: near-hexagonal inside, adapted to the boundary. It is what you would install if all stations went in at once and build order did not matter.
+Every network is scored against an **all-at-once layout** with the same number of stations. That layout is a centroidal Voronoi (k-means) layout: near-hexagonal inside, adapted to the boundary. It is what you would install if all stations went in at once and siting order did not matter.
 
 **Kansas from scratch** (`results_scratch/kansas_scratch_maps.png`). Each cell shows largest gap / mean distance, in km.
 
@@ -88,7 +88,7 @@ Every network is scored against an **all-at-once layout** with the same number o
 - The buffer method is only competitive at about 50 km, in sparse networks, and it often gives no answer at all.
 - At 25 km the buffer method is clearly worse.
 
-**Building from scratch:** the buffer method is not usable, because it grows a single cluster from the centre. LEA works, but it under-serves edges and corners. If all stations will be planned together, start from an all-at-once (hexagonal/centroidal) layout, and use LEA to rank the build order or to add stations later.
+**Building from scratch:** the buffer method is not usable, because it grows a single cluster from the centre. LEA works, but it under-serves edges and corners. If all stations will be planned together, start from an all-at-once (hexagonal/centroidal) layout, and use LEA to rank the siting order or to add stations later.
 
 **LEA's weak spot in both cases is corners.** They are never candidate points and their clipped circles are small, so they are filled last. The effect is small in dense existing networks and large when starting from zero.
 
