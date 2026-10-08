@@ -562,11 +562,19 @@
 
           <h3>Why not simple buffers?</h3>
           <p>
-            A simpler alternative is to draw a fixed buffer around each station and place the next one in the
-            largest uncovered area. The result then depends on the chosen buffer radius, and when uncovered areas
-            merge into large or irregular shapes, their centroid may not fall in the actual gap. The
-            largest-empty-area method needs no radius; it uses only the station locations and the boundary.
-            Here, buffers are only drawn as each station's footprint.
+            A common alternative is to buffer every station by a fixed radius and place the next station at the
+            centroid of the largest area left uncovered. This approach can work well when the buffer radius
+            matches the spacing of the network, but it has two limitations. First, the result depends on the
+            chosen radius: if the radius is changed later, the entire analysis has to be redone and the suggested
+            sites move. Second, the uncovered area left between the buffers is often irregular in shape, and its
+            centroid can land close to an existing station or even outside the region.
+          </p>
+          <p>
+            The largest-empty-area method has no tunable parameter. The candidate centers come from the Voronoi
+            diagram of the existing stations, which by construction identifies the points farthest from their
+            nearest station. Every candidate is evaluated, and each circle is clipped to the boundary so that
+            sites near the border are credited only for the area inside the region. In this tool, buffers are
+            used only to display the footprint of each station.
           </p>
           <p class="muted" style="border-top:1px solid var(--border);padding-top:12px;margin-top:16px">
             Created by Andres Patrignani, Soil Water Processes Lab, Department of Agronomy, Kansas State University
